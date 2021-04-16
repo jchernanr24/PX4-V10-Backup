@@ -1,0 +1,26 @@
+uint64 timestamp		# time since system start (microseconds)
+
+
+float32 attitude_error_function      # attitude error function used
+
+float32[3] error_so3        # SO(3) error
+float32[3] tau_ref          # Control torque
+float32[3] ctr_defl          # deflections (degrees?)
+float32[3] pwm_out_ctr          # PWM command
+float32[9] cbi_rows          # Cbi rows first
+float32[9] cri_rows          # Cri rows first
+
+float32 motor_rpm           #motor commanded rpm
+
+float32 coordinate_chi_rate # coordinated turn rate
+float32 pilot_roll_com      # commanded roll manual
+float32 pilot_pitch_com      # commanded pitch manual
+float32 pilot_yaw_com      # commanded yaw manual
+float32 ground_speed_attitude # ground speed for coordinated turn
+
+float32 yaw_measured     # yaw angle for comparison
+float32 pitch_measured   # pitch angle for comparison
+float32 roll_measured   # roll angle for comparison
+
+
+float32 test_variable    # dummy tester slot

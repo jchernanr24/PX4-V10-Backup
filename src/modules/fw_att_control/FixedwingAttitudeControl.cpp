@@ -306,6 +306,11 @@ FixedwingAttitudeControl::vehicle_manual_poll()
 					_att_sp.yaw_body = 0.0f;
 					_att_sp.thrust_body[0] = _manual.z;
 
+					_juan_att_var.timestamp = hrt_absolute_time();
+					_juan_att_var.test_variable = _manual.x;
+					_juan_attitude_variables_pub.publish(_juan_att_var);
+
+
 					Quatf q(Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body));
 					q.copyTo(_att_sp.q_d);
 					_att_sp.q_d_valid = true;
