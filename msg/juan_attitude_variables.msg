@@ -22,5 +22,9 @@ float32 yaw_measured     # yaw angle for comparison
 float32 pitch_measured   # pitch angle for comparison
 float32 roll_measured   # roll angle for comparison
 
+float32 yaw_reference     # yaw angle reference
+float32 pitch_reference   # pitch angle reference
+float32 roll_reference   # roll angle reference
+
 
 float32 test_variable    # dummy tester slot
