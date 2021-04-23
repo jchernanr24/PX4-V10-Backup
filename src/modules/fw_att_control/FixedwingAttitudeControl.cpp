@@ -306,10 +306,6 @@ FixedwingAttitudeControl::vehicle_manual_poll()
 					_att_sp.yaw_body = 0.0f;
 					_att_sp.thrust_body[0] = _manual.z;
 
-					_juan_att_var.timestamp = hrt_absolute_time();
-					_juan_att_var.test_variable = _manual.x;
-					_juan_attitude_variables_pub.publish(_juan_att_var);
-
 
 					Quatf q(Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body));
 					q.copyTo(_att_sp.q_d);
@@ -760,17 +756,165 @@ void FixedwingAttitudeControl::Run()
 				_yaw_ctrl.set_bodyrate_setpoint(_rates_sp.yaw);
 				_pitch_ctrl.set_bodyrate_setpoint(_rates_sp.pitch);
 
-				float roll_u = _roll_ctrl.control_bodyrate(control_input);
-				_actuators.control[actuator_controls_s::INDEX_ROLL] = (PX4_ISFINITE(roll_u)) ? roll_u + trim_roll : trim_roll;
+				// float roll_u = _roll_ctrl.control_bodyrate(control_input);
+				// _actuators.control[actuator_controls_s::INDEX_ROLL] = (PX4_ISFINITE(roll_u)) ? roll_u + trim_roll : trim_roll;
+				//
+				// float pitch_u = _pitch_ctrl.control_bodyrate(control_input);
+				// _actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + trim_pitch : trim_pitch;
+				//
+				// float yaw_u = _yaw_ctrl.control_bodyrate(control_input);
+				// _actuators.control[actuator_controls_s::INDEX_YAW] = (PX4_ISFINITE(yaw_u)) ? yaw_u + trim_yaw : trim_yaw;
+				//
+				// _actuators.control[actuator_controls_s::INDEX_THROTTLE] = PX4_ISFINITE(_rates_sp.thrust_body[0]) ?
+				// 		_rates_sp.thrust_body[0] : 0.0f;
 
-				float pitch_u = _pitch_ctrl.control_bodyrate(control_input);
-				_actuators.control[actuator_controls_s::INDEX_PITCH] = (PX4_ISFINITE(pitch_u)) ? pitch_u + trim_pitch : trim_pitch;
 
-				float yaw_u = _yaw_ctrl.control_bodyrate(control_input);
-				_actuators.control[actuator_controls_s::INDEX_YAW] = (PX4_ISFINITE(yaw_u)) ? yaw_u + trim_yaw : trim_yaw;
+				// /* JUAN attitude control starts here */
 
-				_actuators.control[actuator_controls_s::INDEX_THROTTLE] = PX4_ISFINITE(_rates_sp.thrust_body[0]) ?
-						_rates_sp.thrust_body[0] : 0.0f;
+					matrix::Dcmf C_bi = R.transpose();
+
+					float x_rate_body = angular_velocity.xyz[0];
+					float y_rate_body = angular_velocity.xyz[1];
+					float z_rate_body = angular_velocity.xyz[2];
+
+					float _read_roll_stick = _manual.y;
+					float _read_pitch_stick = _manual.x;
+					float _read_thrust_stick = _manual.z;
+
+					// float _manual_roll = _read_roll_stick*0.785f;
+					// float _manual_pitch = _read_pitch_stick*-0.785f;
+
+					float _manual_roll = 90.0f*3.14f/180.0f;
+					float _manual_pitch = 45.0f*3.14f/180.0f;
+					float _manual_yaw = 0.0f;
+
+
+					float bldr_array_Cyaw[9] = {cosf(_manual_yaw), sinf(_manual_yaw), 0.0f, -sinf(_manual_yaw), cosf(_manual_yaw), 0.0f, 0.0f, 0.0f, 1.0f};
+					matrix::SquareMatrix<float, 3> Bldr_Matrix_Cyaw(bldr_array_Cyaw);
+					matrix::Dcmf C_yaw(Bldr_Matrix_Cyaw);
+
+					float bldr_array_Cpitch[9] = {cosf(_manual_pitch), 0.0f, -sinf(_manual_pitch), 0.0f, 1.0f, 0.0f, sinf(_manual_pitch), 0.0f, cosf(_manual_pitch)};
+					matrix::SquareMatrix<float, 3> Bldr_Matrix_Cpitch(bldr_array_Cpitch);
+					matrix::Dcmf C_pitch(Bldr_Matrix_Cpitch);
+
+					float bldr_array_Croll[9] = {1.0f, 0.0f, 0.0f, 0.0f, cosf(_manual_roll), sinf(_manual_roll), 0.0f, -sinf(_manual_roll), cosf(_manual_roll)};
+					matrix::SquareMatrix<float, 3> Bldr_Matrix_Croll(bldr_array_Croll);
+					matrix::Dcmf C_roll(Bldr_Matrix_Croll);
+
+					// float bldr_array_Ctest[9] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+					// matrix::SquareMatrix<float, 3> Bldr_Matrix_Ctest(bldr_array_Ctest);
+					// matrix::Dcmf C_test(Bldr_Matrix_Ctest);
+
+					 matrix::Dcmf C_manual = C_roll*C_pitch*C_yaw;
+					// matrix::Dcmf C_manual = C_roll*C_pitch*C_yaw;
+					// matrix::Dcmf C_manual = C_roll*C_pitch;
+				 	matrix::Dcmf C_ir = C_manual.transpose();
+					matrix::Dcmf C_br = C_bi*C_ir;
+					matrix::Dcmf C_ri = C_ir.transpose();
+
+					float att_err_modifier = 1.0f; // This is the standard
+					float att_err_function = 0.0f;
+
+					//C_br = C_br.transpose();
+					float err_att_1 = att_err_modifier*-0.5f*(C_br(1,2)-C_br(2,1));
+					float err_att_2 = att_err_modifier*0.5f*(C_br(0,2)-C_br(2,0));
+					float err_att_3 = att_err_modifier*-0.5f*(C_br(0,1)-C_br(1,0));
+
+					float S_area = 0.14274f; //Wing Area (m^2), yak54 = 0.14865
+					float b_span = 0.864f; //Wing Span (m), yak54 = .82
+					float c_bar = 0.21f; //Mean Aerodynamic Chord (m), yak54 =.2107
+					float Cl_delta_a = -0.0006777f; //Aileron Control Derivative Coefficient (/deg)
+					float Cm_delta_e = -0.0117747f; //Elevator Control Derivative Coefficient (/deg)
+					float Cn_delta_r = -0.0035663f; //Rudder Control Derivative Coefficient (/deg)
+					float ro = 1.225f;
+
+					float AilDef_max = 52.0f; //52.0fMaximum Aileron Deflection (deg)
+					float ElevDef_max = 59.0f; //35.0fMaximum Elevator Deflection (deg)
+					float RudDef_max = 49.0f; //56.0fMaximum Rudder Deflection (deg)
+					float omega_t_max = 6710.0f; //Maximimum Thrust (RPM)
+					float omega_t_min = 1716.0f; //Minimum Thrust (RPM)
+
+					float Kad1 = 1.0f*0.00706f;
+					float Kad2 = 1.0f*0.07576f;
+					float Kad3 = 1.0f*0.07736f;
+					float Kap1 = 1.0f*0.1656f;
+					float Kap2 = 1.0f*1.022f;
+					float Kap3 = 1.0f*0.6776f;
+					// // Error with SO(3) controller
+					float tau_1 = -0.7f*Kad1*x_rate_body+0.8f*Kap1*err_att_1;
+					float tau_2 = -0.8f*Kad2*y_rate_body+0.8f*Kap2*err_att_2;
+					float tau_3 = -0.8f*Kad3*z_rate_body+0.8f*Kap3*err_att_3;
+
+					float Vs = 5.0f;
+
+					float AilDef=1.0f*tau_1/(.5f*ro*powf(Vs,2.0f)*S_area*b_span*Cl_delta_a); //Aileron Deflection (deg)
+	    		float ElevDef=1.0f*tau_2/(.5f*ro*powf(Vs,2.0f)*S_area*c_bar*Cm_delta_e); //Elevator Deflection (deg)
+					float RudDef=0.8f*tau_3/(.5f*ro*powf(Vs,2.0f)*S_area*b_span*Cn_delta_r); //Rudder Deflection (deg)
+
+					float outputs_ail = 0.0000016235f*powf(AilDef,3.0f) - 0.0000009861f*powf(AilDef,2.0f) + 0.0145866432f*AilDef;
+					float outputs_ele = 0.0000008317f*powf(ElevDef,3.0f) + 0.0000409759f*powf(ElevDef,2.0f) + 0.01396963f*ElevDef;
+					float outputs_rud = 0.0000007988f*powf(RudDef,3.0f) + 0.0000092020f*powf(RudDef,2.0f) + 0.0187045418f*RudDef;
+
+					// //ThrustN = 9.81f*0.45f;
+					// //Thrust mappings
+					// float Jar = 0.5f;
+					// float kt = (-1.43909969 * Jar * Jar - 2.21240323 * Jar + 2.24512051) * powf(10.0f,-7.0f);
+					// float omega_t = sqrtf(ThrustN/kt);
+					// float thrust_PWM = saturate(1.6572 * powf(10.0f,-5.0f) * powf(omega_t,2.0) + .0166 * omega_t + 1121.8,1000,2000);
+
+
+
+					// float _vel_ground = sqrtf(_global_pos.vel_n * _global_pos.vel_n +
+					// 			  _global_pos.vel_e * _global_pos.vel_e);
+
+
+
+						_actuators.control[actuator_controls_s::INDEX_ROLL] = -outputs_ail;
+						_actuators.control[actuator_controls_s::INDEX_PITCH] = -outputs_ele;
+						_actuators.control[actuator_controls_s::INDEX_YAW] = outputs_rud;
+
+
+					// Special command
+					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
+
+
+
+					_juan_att_var.timestamp = hrt_absolute_time();
+					_juan_att_var.test_variable = 180.0f*_manual_pitch/3.14f;
+
+					_juan_att_var.tau_ref[0] = tau_1;
+					_juan_att_var.tau_ref[1] = tau_2;
+					_juan_att_var.tau_ref[2] = tau_3;
+
+					_juan_att_var.error_so3[0] = err_att_1;
+					_juan_att_var.error_so3[1] = err_att_2;
+					_juan_att_var.error_so3[2] = err_att_3;
+
+
+					_juan_att_var.ctr_defl[0] = AilDef;
+					_juan_att_var.ctr_defl[1] = ElevDef;
+					_juan_att_var.ctr_defl[2] = RudDef;
+
+					_juan_att_var.pwm_out_ctr[0] = outputs_ail;
+				  _juan_att_var.pwm_out_ctr[1] = outputs_ele;
+				  _juan_att_var.pwm_out_ctr[2] = outputs_rud;
+
+					matrix::Eulerf euler_now(C_bi.transpose());
+
+					_juan_att_var.yaw_measured = euler_now.psi();
+					_juan_att_var.pitch_measured = euler_now.theta();
+					_juan_att_var.roll_measured = euler_now.phi();
+
+					matrix::Eulerf euler_ref(C_ri.transpose());
+
+					_juan_att_var.yaw_reference = euler_ref.psi();
+					_juan_att_var.pitch_reference = euler_ref.theta();
+					_juan_att_var.roll_reference = euler_ref.phi();
+
+					_juan_attitude_variables_pub.publish(_juan_att_var);
+
+				// /* JUAN attitude control ends here */
+
 			}
 
 			rate_ctrl_status_s rate_ctrl_status;
@@ -805,6 +949,7 @@ void FixedwingAttitudeControl::Run()
 		    _vcontrol_mode.flag_control_attitude_enabled ||
 		    _vcontrol_mode.flag_control_manual_enabled) {
 			/* publish the actuator controls */
+
 			if (_actuators_0_pub != nullptr) {
 				orb_publish(_actuators_id, _actuators_0_pub, &_actuators);
 
