@@ -784,8 +784,8 @@ void FixedwingAttitudeControl::Run()
 					// float _manual_roll = _read_roll_stick*0.785f;
 					// float _manual_pitch = _read_pitch_stick*-0.785f;
 
-					float _manual_roll = 90.0f*3.14f/180.0f;
-					float _manual_pitch = 45.0f*3.14f/180.0f;
+					float _manual_roll = 0.0f*3.14f/180.0f;
+					float _manual_pitch = 0.0f*3.14f/180.0f;
 					float _manual_yaw = 0.0f;
 
 
