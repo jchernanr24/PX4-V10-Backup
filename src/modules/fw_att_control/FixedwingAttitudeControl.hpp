@@ -152,6 +152,10 @@ private:
 
 	bool _is_tailsitter{false};
 
+	//JUAN custom variables
+	float _previous_yaw{0.0f};
+	float _previous_time{0.0f};
+
 	struct {
 		float p_tc;
 		float p_p;
@@ -218,6 +222,11 @@ private:
 
 		int32_t bat_scale_en;			/**< Battery scaling enabled */
 		bool airspeed_disabled;
+
+
+
+
+
 
 	} _parameters{};			/**< local copies of interesting parameters */
 

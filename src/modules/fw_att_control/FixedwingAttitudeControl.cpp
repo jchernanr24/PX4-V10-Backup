@@ -749,6 +749,11 @@ void FixedwingAttitudeControl::Run()
 
 				_rate_sp_pub.publish(_rates_sp);
 
+				// JUAN: Preparing variables for custom mode transition
+				_previous_yaw = euler_angles.psi();
+				_previous_time = hrt_absolute_time()/1e6;
+
+
 			} else {
 				vehicle_rates_setpoint_poll();
 
@@ -781,12 +786,22 @@ void FixedwingAttitudeControl::Run()
 					float _read_pitch_stick = _manual.x;
 					float _read_thrust_stick = _manual.z;
 
-					// float _manual_roll = _read_roll_stick*0.785f;
-					// float _manual_pitch = _read_pitch_stick*-0.785f;
+					float _manual_roll = _read_roll_stick*0.785f;
+					float _manual_pitch = _read_pitch_stick*-0.785f;
 
-					float _manual_roll = 0.0f*3.14f/180.0f;
-					float _manual_pitch = 0.0f*3.14f/180.0f;
-					float _manual_yaw = 0.0f;
+
+					float _time_attitude_now = hrt_absolute_time()/1e6;
+					float _delta_time_attitude = _time_attitude_now - _previous_time;
+					_previous_time = _time_attitude_now;
+
+					float _vel_ground = 10.0f;
+					float _heading_rate_coordinated = 9.81f/_vel_ground * tanf(_manual_roll);
+					float _manual_yaw = _delta_time_attitude*_heading_rate_coordinated+_previous_yaw;
+					_previous_yaw = _manual_yaw;
+
+
+
+
 
 
 					float bldr_array_Cyaw[9] = {cosf(_manual_yaw), sinf(_manual_yaw), 0.0f, -sinf(_manual_yaw), cosf(_manual_yaw), 0.0f, 0.0f, 0.0f, 1.0f};
@@ -847,9 +862,9 @@ void FixedwingAttitudeControl::Run()
 
 					float Vs = 5.0f;
 
-					float AilDef=1.0f*tau_1/(.5f*ro*powf(Vs,2.0f)*S_area*b_span*Cl_delta_a); //Aileron Deflection (deg)
-	    		float ElevDef=1.0f*tau_2/(.5f*ro*powf(Vs,2.0f)*S_area*c_bar*Cm_delta_e); //Elevator Deflection (deg)
-					float RudDef=0.8f*tau_3/(.5f*ro*powf(Vs,2.0f)*S_area*b_span*Cn_delta_r); //Rudder Deflection (deg)
+					float AilDef=0.8f*tau_1/(.5f*ro*powf(Vs,2.0f)*S_area*b_span*Cl_delta_a); //Aileron Deflection (deg)
+	    		float ElevDef=0.8f*tau_2/(.5f*ro*powf(Vs,2.0f)*S_area*c_bar*Cm_delta_e); //Elevator Deflection (deg)
+					float RudDef=0.6f*tau_3/(.5f*ro*powf(Vs,2.0f)*S_area*b_span*Cn_delta_r); //Rudder Deflection (deg)
 
 					float outputs_ail = 0.0000016235f*powf(AilDef,3.0f) - 0.0000009861f*powf(AilDef,2.0f) + 0.0145866432f*AilDef;
 					float outputs_ele = 0.0000008317f*powf(ElevDef,3.0f) + 0.0000409759f*powf(ElevDef,2.0f) + 0.01396963f*ElevDef;
@@ -899,17 +914,31 @@ void FixedwingAttitudeControl::Run()
 				  _juan_att_var.pwm_out_ctr[1] = outputs_ele;
 				  _juan_att_var.pwm_out_ctr[2] = outputs_rud;
 
-					matrix::Eulerf euler_now(C_bi.transpose());
-
+					matrix::Eulerf euler_now(R);
+					// matrix::Eulerf euler_now(C_bi.transpose());
 					_juan_att_var.yaw_measured = euler_now.psi();
 					_juan_att_var.pitch_measured = euler_now.theta();
 					_juan_att_var.roll_measured = euler_now.phi();
 
-					matrix::Eulerf euler_ref(C_ri.transpose());
 
+					matrix::Eulerf euler_ref(C_ir);
 					_juan_att_var.yaw_reference = euler_ref.psi();
 					_juan_att_var.pitch_reference = euler_ref.theta();
 					_juan_att_var.roll_reference = euler_ref.phi();
+
+
+					_juan_att_var.pilot_roll_com = _manual_roll;
+					_juan_att_var.pilot_pitch_com = _manual_pitch;
+					_juan_att_var.pilot_yaw_com = _manual_yaw;
+
+
+
+
+
+					// matrix::Eulerf euler_ref(C_ri.transpose());
+					// _juan_att_var.yaw_reference = euler_ref.psi();
+					// _juan_att_var.pitch_reference = euler_ref.theta();
+					// _juan_att_var.roll_reference = euler_ref.phi();
 
 					_juan_attitude_variables_pub.publish(_juan_att_var);
 
