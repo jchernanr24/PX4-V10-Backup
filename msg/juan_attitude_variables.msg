@@ -12,7 +12,7 @@ float32[9] cri_rows          # Cri rows first
 
 float32 motor_rpm           #motor commanded rpm
 
-float32 coordinate_chi_rate # coordinated turn rate
+float32 coordinate_yaw_rate # coordinated turn rate
 float32 pilot_roll_com      # commanded roll manual
 float32 pilot_pitch_com      # commanded pitch manual
 float32 pilot_yaw_com      # commanded yaw manual

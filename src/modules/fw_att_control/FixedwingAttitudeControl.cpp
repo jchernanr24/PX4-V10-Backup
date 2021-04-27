@@ -777,6 +777,7 @@ void FixedwingAttitudeControl::Run()
 				// /* JUAN attitude control starts here */
 
 					matrix::Dcmf C_bi = R.transpose();
+					matrix::Eulerf euler_now(R);
 
 					float x_rate_body = angular_velocity.xyz[0];
 					float y_rate_body = angular_velocity.xyz[1];
@@ -794,7 +795,15 @@ void FixedwingAttitudeControl::Run()
 					float _delta_time_attitude = _time_attitude_now - _previous_time;
 					_previous_time = _time_attitude_now;
 
-					float _vel_ground = 10.0f;
+					matrix::Vector3f _inertial_velocity(_global_pos.vel_n, _global_pos.vel_e, _global_pos.vel_d);
+					matrix::Vector3f _body_velocity = C_bi*_inertial_velocity;
+					float _vel_ground = sqrtf(_body_velocity(0)*_body_velocity(0)+_body_velocity(1)+_body_velocity(1));
+
+					if (_vel_ground <5.0f){
+						_vel_ground = 5.0f;
+					}
+
+					// float _vel_ground = 10.0f;
 					float _heading_rate_coordinated = 9.81f/_vel_ground * tanf(_manual_roll);
 					float _manual_yaw = _delta_time_attitude*_heading_rate_coordinated+_previous_yaw;
 					_previous_yaw = _manual_yaw;
@@ -830,6 +839,21 @@ void FixedwingAttitudeControl::Run()
 					float att_err_modifier = 1.0f; // This is the standard
 					float att_err_function = 0.0f;
 
+					// float trace_C = C_br(0,0) + C_br(1,1) + C_br(2,2);
+					// float err_att_aux = 1+trace_C;
+					// if (err_att_aux < 0.01)
+					// {
+					// 	att_err_modifier = 1.0f;
+					// }
+					// else
+					// {
+					// 	// att_err_modifier = 2.0f/sqrtf(1+trace_C); //t. lee
+					//  // float att_err_function = 1.0f;
+					// 	att_err_modifier = 4.0f/(1+trace_C); //forbes
+					// float att_err_function = 2.0f;
+					// }
+
+
 					//C_br = C_br.transpose();
 					float err_att_1 = att_err_modifier*-0.5f*(C_br(1,2)-C_br(2,1));
 					float err_att_2 = att_err_modifier*0.5f*(C_br(0,2)-C_br(2,0));
@@ -855,6 +879,21 @@ void FixedwingAttitudeControl::Run()
 					float Kap1 = 1.0f*0.1656f;
 					float Kap2 = 1.0f*1.022f;
 					float Kap3 = 1.0f*0.6776f;
+
+
+					// Angular velocity reference
+
+					// float _omega_ri_1 = 0.0f*-sinf(euler_now.theta())*_heading_rate_coordinated;
+					// float _omega_ri_2 = cosf(euler_now.phi())*0.0f+sinf(euler_now.phi())*cosf(euler_now.theta())*_heading_rate_coordinated;
+					// float _omega_ri_3 = -sinf(euler_now.phi())*0.0f+cosf(euler_now.phi())*cosf(euler_now.theta())*_heading_rate_coordinated;
+					// matrix::Vector3f _omega_reference(_omega_ri_1,_omega_ri_2,_omega_ri_3);
+					// matrix::Vector3f _omega_reference_body =  C_br*_omega_reference;
+					//
+					// float tau_1 = -0.7f*Kad1*(x_rate_body-_omega_reference_body(0))+0.8f*Kap1*err_att_1;
+					// float tau_2 = -0.8f*Kad2*(y_rate_body-_omega_reference_body(1))+0.8f*Kap2*err_att_2;
+					// float tau_3 = -0.8f*Kad3*(z_rate_body-_omega_reference_body(2))+0.8f*Kap3*err_att_3;
+
+
 					// // Error with SO(3) controller
 					float tau_1 = -0.7f*Kad1*x_rate_body+0.8f*Kap1*err_att_1;
 					float tau_2 = -0.8f*Kad2*y_rate_body+0.8f*Kap2*err_att_2;
@@ -884,9 +923,9 @@ void FixedwingAttitudeControl::Run()
 
 
 
-						_actuators.control[actuator_controls_s::INDEX_ROLL] = -outputs_ail;
-						_actuators.control[actuator_controls_s::INDEX_PITCH] = -outputs_ele;
-						_actuators.control[actuator_controls_s::INDEX_YAW] = outputs_rud;
+					_actuators.control[actuator_controls_s::INDEX_ROLL] = -outputs_ail;
+					_actuators.control[actuator_controls_s::INDEX_PITCH] = -outputs_ele;
+					_actuators.control[actuator_controls_s::INDEX_YAW] = outputs_rud;
 
 
 					// Special command
@@ -914,7 +953,7 @@ void FixedwingAttitudeControl::Run()
 				  _juan_att_var.pwm_out_ctr[1] = outputs_ele;
 				  _juan_att_var.pwm_out_ctr[2] = outputs_rud;
 
-					matrix::Eulerf euler_now(R);
+
 					// matrix::Eulerf euler_now(C_bi.transpose());
 					_juan_att_var.yaw_measured = euler_now.psi();
 					_juan_att_var.pitch_measured = euler_now.theta();
@@ -930,7 +969,9 @@ void FixedwingAttitudeControl::Run()
 					_juan_att_var.pilot_roll_com = _manual_roll;
 					_juan_att_var.pilot_pitch_com = _manual_pitch;
 					_juan_att_var.pilot_yaw_com = _manual_yaw;
-
+					_juan_att_var.ground_speed_attitude = _vel_ground;
+					_juan_att_var.coordinate_yaw_rate = _heading_rate_coordinated;
+					_juan_att_var.attitude_error_function = att_err_function;
 
 
 
