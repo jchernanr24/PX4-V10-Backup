@@ -155,6 +155,7 @@ private:
 	//JUAN custom variables
 	float _previous_yaw{0.0f};
 	float _previous_time{0.0f};
+	float _ground_velocity_corrected{5.0f};
 
 	struct {
 		float p_tc;

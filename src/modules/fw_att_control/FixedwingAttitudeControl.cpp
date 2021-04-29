@@ -795,18 +795,37 @@ void FixedwingAttitudeControl::Run()
 					float _delta_time_attitude = _time_attitude_now - _previous_time;
 					_previous_time = _time_attitude_now;
 
+					// Velocity
 					matrix::Vector3f _inertial_velocity(_global_pos.vel_n, _global_pos.vel_e, _global_pos.vel_d);
 					matrix::Vector3f _body_velocity = C_bi*_inertial_velocity;
 					float _vel_ground = sqrtf(_body_velocity(0)*_body_velocity(0)+_body_velocity(1)+_body_velocity(1));
 
+
+
 					if (_vel_ground <5.0f){
-						_vel_ground = 5.0f;
+						_ground_velocity_corrected = 5.0f;
 					}
+					else {
+						_ground_velocity_corrected = _vel_ground;
+					}
+					// float _vel_ground = 5.0f;
 
 					// float _vel_ground = 10.0f;
-					float _heading_rate_coordinated = 9.81f/_vel_ground * tanf(_manual_roll);
+
+					// JUAN note: tangent can cause issues if roll is allowed to go to 90 degrees!
+					float _heading_rate_coordinated = 9.81f/_ground_velocity_corrected * tanf(_manual_roll);
+
 					float _manual_yaw = _delta_time_attitude*_heading_rate_coordinated+_previous_yaw;
-					_previous_yaw = _manual_yaw;
+					bool _manual_yaw_check = PX4_ISFINITE(_manual_yaw);
+
+					if (_manual_yaw_check)
+					{
+						_previous_yaw = _manual_yaw;
+					}
+					else{
+						_manual_yaw = _previous_yaw;
+					}
+
 
 
 
@@ -925,7 +944,7 @@ void FixedwingAttitudeControl::Run()
 
 					_actuators.control[actuator_controls_s::INDEX_ROLL] = -outputs_ail;
 					_actuators.control[actuator_controls_s::INDEX_PITCH] = -outputs_ele;
-					_actuators.control[actuator_controls_s::INDEX_YAW] = outputs_rud;
+					_actuators.control[actuator_controls_s::INDEX_YAW] = -outputs_rud;
 
 
 					// Special command
@@ -934,7 +953,7 @@ void FixedwingAttitudeControl::Run()
 
 
 					_juan_att_var.timestamp = hrt_absolute_time();
-					_juan_att_var.test_variable = 180.0f*_manual_pitch/3.14f;
+					_juan_att_var.test_variable = _delta_time_attitude;
 
 					_juan_att_var.tau_ref[0] = tau_1;
 					_juan_att_var.tau_ref[1] = tau_2;
@@ -949,9 +968,9 @@ void FixedwingAttitudeControl::Run()
 					_juan_att_var.ctr_defl[1] = ElevDef;
 					_juan_att_var.ctr_defl[2] = RudDef;
 
-					_juan_att_var.pwm_out_ctr[0] = outputs_ail;
-				  _juan_att_var.pwm_out_ctr[1] = outputs_ele;
-				  _juan_att_var.pwm_out_ctr[2] = outputs_rud;
+					// _juan_att_var.pwm_out_ctr[0] = outputs_ail;
+				  // _juan_att_var.pwm_out_ctr[1] = outputs_ele;
+				  // _juan_att_var.pwm_out_ctr[2] = outputs_rud;
 
 
 					// matrix::Eulerf euler_now(C_bi.transpose());
@@ -969,9 +988,9 @@ void FixedwingAttitudeControl::Run()
 					_juan_att_var.pilot_roll_com = _manual_roll;
 					_juan_att_var.pilot_pitch_com = _manual_pitch;
 					_juan_att_var.pilot_yaw_com = _manual_yaw;
-					_juan_att_var.ground_speed_attitude = _vel_ground;
+					_juan_att_var.ground_speed_attitude = _ground_velocity_corrected;
 					_juan_att_var.coordinate_yaw_rate = _heading_rate_coordinated;
-					_juan_att_var.attitude_error_function = att_err_function;
+					// _juan_att_var.attitude_error_function = att_err_function;
 
 
 
