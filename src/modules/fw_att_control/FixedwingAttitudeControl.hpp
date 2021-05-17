@@ -154,8 +154,18 @@ private:
 
 	//JUAN custom variables
 	float _previous_yaw{0.0f};
+
+	float _yaw_test_profile{0.0f};
+	float _roll_test_profile{0.0f};
+	float _pitch_test_profile{0.0f};
+
+
 	float _previous_time{0.0f};
 	float _ground_velocity_corrected{5.0f};
+	float _time_elapsed{0.0f};
+	float _e_int_1{0.0f};
+	float _e_int_2{0.0f};
+	float _e_int_3{0.0f};
 
 	struct {
 		float p_tc;
