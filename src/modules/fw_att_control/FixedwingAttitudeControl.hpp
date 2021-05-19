@@ -177,6 +177,7 @@ private:
 	float _previous_time{0.0f};
 	float _ground_velocity_corrected{5.0f};
 	float _time_elapsed{0.0f};
+	float _delta_time_attitude{0.0f};
 	float _e_int_1{0.0f};
 	float _e_int_2{0.0f};
 	float _e_int_3{0.0f};
@@ -192,7 +193,13 @@ private:
 	float _pos_x_initial{0.0f};
 	float _pos_y_initial{0.0f};
 	float _pos_z_initial{0.0f};
-
+	float _error_x_int{0.0f};
+	float _error_y_int{0.0f};
+	float _error_z_int{0.0f};
+	// Position controller outputs: ref. DCM and thrust command.
+	float C_reference_rows[9] = {1.0f, 0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,1.0f};
+	float ThrustN{0.0f};
+	int _control_operation_mode{0}; // controller exception management
 
 	struct {
 		float p_tc;
@@ -358,7 +365,7 @@ private:
 	float 		get_airspeed_and_update_scaling();
 
 	//JUAN additional functions
-	// void    JUAN_position_control();
+	void    JUAN_position_control();
 	void    JUAN_reference_generator(int _maneuver_type);
 	float   saturate(float value, float min, float max);
 

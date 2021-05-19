@@ -31,3 +31,12 @@ float32[3] omega_bod   # angular velocity measurement in body coord
 
 
 float32 test_variable    # dummy tester slot
+
+
+float32 reference_position_x # north reference
+float32 reference_position_y # east reference
+float32 reference_position_z # down reference
+
+float32 estimated_position_x # north estimated
+float32 estimated_position_y # east estimated
+float32 estimated_position_z # down estimated

@@ -766,6 +766,13 @@ void FixedwingAttitudeControl::Run()
 				_e_int_2 = 0.0f;
 				_e_int_3 = 0.0f;
 
+				_error_x_int = 0.0f;
+				_error_y_int = 0.0f;
+				_error_z_int = 0.0f;
+
+				_control_operation_mode = 0.0f;
+
+
 				_yaw_test_profile = _previous_yaw;
 				_pitch_test_profile = 0.0f;
 				_roll_test_profile = 0.0f;
@@ -774,6 +781,11 @@ void FixedwingAttitudeControl::Run()
 				_pos_x_ref = _local_pos.x;
 				_pos_y_ref = _local_pos.y;
 				_pos_z_ref = _local_pos.z;
+
+				_pos_x_initial = _pos_x_ref;
+				_pos_y_initial = _pos_y_ref;
+				_pos_z_initial = _pos_z_ref;
+
 
 				_vel_x_ref = _local_pos.vx;
 				_vel_y_ref = _local_pos.vy;
@@ -806,7 +818,7 @@ void FixedwingAttitudeControl::Run()
 					// Time management
 					float _time_loop_start = hrt_absolute_time();
 					float _time_attitude_now = hrt_absolute_time()/1e6;
-					float _delta_time_attitude = _time_attitude_now - _previous_time;
+					_delta_time_attitude = _time_attitude_now - _previous_time;
 					_previous_time = _time_attitude_now;
 
 					_time_elapsed = _time_elapsed + _delta_time_attitude;
@@ -1167,6 +1179,26 @@ void FixedwingAttitudeControl::Run()
 					//
 					// _juan_att_var.test_variable = _delta_run_time;
 					//
+					JUAN_reference_generator(1);
+					_juan_att_var.reference_position_x = _pos_x_ref;
+					_juan_att_var.reference_position_y = _pos_y_ref;
+					_juan_att_var.reference_position_z = _pos_z_ref;
+
+					_local_pos_sub.update(&_local_pos);
+					float _pos_x_est = _local_pos.x;
+					float _pos_y_est = _local_pos.y;
+					float _pos_z_est = _local_pos.z;
+					float _vel_x_est = _local_pos.vx;
+					float _vel_y_est = _local_pos.vy;
+					float _vel_z_est = _local_pos.vz;
+
+					_juan_att_var.estimated_position_x = _pos_x_est;
+					_juan_att_var.estimated_position_y = _pos_y_est;
+					_juan_att_var.estimated_position_z = _pos_z_est;
+
+
+
+
 					_juan_attitude_variables_pub.publish(_juan_att_var);
 					/*..................................................................*/
 
@@ -1341,6 +1373,120 @@ int fw_att_control_main(int argc, char *argv[])
 {
 	return FixedwingAttitudeControl::main(argc, argv);
 }
+
+
+void FixedwingAttitudeControl::JUAN_position_control()
+{
+	// Not variables; Make these constants later
+	float _gravity_const = 9.81f;
+	float _mass_const = 0.45f;
+	// Position Control Gains
+	float KpX = 0.75f*0.6f*1.0f*3*0.1f*1.8f;
+	float KpY = 0.75f*0.6f*1.0f*3*0.1f*1.8f;
+	float KpZ =  0.75f*0.7f*6*0.1f*6.0f;
+	float KdX = 0.7f*0.9f*1.0f*0.5f*0.42f;
+	float KdY = 0.7f*0.9f*1.0f*0.5f*0.42f;
+	float KdZ = 0.7f*0.9f*1.0f*0.5f*0.21f;
+	float KiX = 0.25f*0.0008f;
+	float KiY = 0.25f*0.0008f;
+	float KiZ = 0.25f*0.0004f;
+	// Added roll gains
+	float k_roll_p = 35*0.005f*4.32f;
+	float k_roll_y = 0.5f*0.7f*0.02f*0.4f;
+	float max_roll = 30.0f;
+	float k_roll_i = 0.0f*0.01f;
+	// controller switch thresholds
+	float angle_thrs_inf = 1*0.01745f;// 15 degrees
+	float angle_thrs_sup = 20*0.01745f;// 25 degrees
+	float vel_thrs_inf = 2.0f; // 2 m/s
+	float vel_thrs_sup = 3.0f; // 5 m/s
+
+
+	// Assigned measured position and velocity
+	_local_pos_sub.update(&_local_pos);
+	float _pos_x_est = _local_pos.x;
+	float _pos_y_est = _local_pos.y;
+	float _pos_z_est = _local_pos.z;
+	float _vel_x_est = _local_pos.vx;
+	float _vel_y_est = _local_pos.vy;
+	float _vel_z_est = _local_pos.vz;
+
+	// Call JUAN Maneuver generator. This assigns a position setpoint.
+	 JUAN_reference_generator(1);
+
+	// Control law
+	float _error_pos_x = _pos_x_ref-_pos_x_est;
+	float _error_pos_y = _pos_y_ref-_pos_y_est;
+	float _error_pos_z = _pos_z_ref-_pos_z_est;
+
+	float _error_vel_x = _vel_x_ref-_vel_x_est;
+	float _error_vel_y = _vel_y_ref-_vel_y_est;
+	float _error_vel_z = _vel_z_ref-_vel_z_est;
+
+	_error_x_int = _error_x_int + _error_pos_x*_delta_time_attitude;
+	_error_y_int = _error_y_int + _error_pos_y*_delta_time_attitude;
+	_error_z_int = _error_z_int + _error_pos_z*_delta_time_attitude;
+
+	// Nose vector
+	float Fv1 = 0.8f*0.8f*(1.3f*KdX * _error_vel_x + KpX * _error_pos_x + 0.5f*KiX * _error_x_int);
+	float Fv2 = 0.8f*0.8f*(1.3f*KdY * _error_vel_y + KpY * _error_pos_y + 0.5f*KiY * _error_y_int);
+	float Fv3 = 0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _error_pos_z + 0.3f*KiZ * _error_z_int) - 0.4f*_gravity_const;
+	float _norm_F = sqrtf(Fv1*Fv1+Fv2*Fv2+Fv3*Fv3);
+	float fv1 = Fv1/_norm_F;
+	float fv2 = Fv2/_norm_F;
+	float fv3 = Fv3/_norm_F;
+	// Thrust magnitude (N)
+  ThrustN = _mass_const*_norm_F;
+	// Non-normalized wing vector
+	float Wv1 = -fv2;
+	float Wv2 = fv1;
+	float Wv3 = 0.0f;
+
+	float _vel_xy_ref = sqrtf(_vel_x_ref*_vel_x_ref+_vel_y_ref*_vel_y_ref);
+	float _norm_W = sqrtf(Wv1*Wv1+Wv2*Wv2);
+	float angle_test = asinf(_norm_W);
+
+	// Singularity management
+	if (_control_operation_mode > 0)
+	{ // in singularity mode, check if tilt and speed are enough
+		if (_vel_xy_ref > vel_thrs_sup)
+		{
+			if (angle_test > angle_thrs_sup)
+			{
+				_control_operation_mode = 0;
+			}
+			else{
+				_control_operation_mode = 1;
+			}
+		}
+		else{
+			_control_operation_mode = 1;
+		}
+	}
+	else //in normal mode
+	{
+		if (_vel_xy_ref > vel_thrs_inf)
+		{
+			if (angle_test > angle_thrs_inf)
+			{
+				_control_operation_mode = 0;
+			}
+			else{
+				_control_operation_mode = 1;
+			}
+		}
+			else{
+				_control_operation_mode = 1;
+			}
+	}
+
+}
+
+
+
+
+
+
 
 void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 {
