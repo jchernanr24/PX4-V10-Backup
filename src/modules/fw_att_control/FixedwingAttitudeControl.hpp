@@ -66,6 +66,8 @@
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/juan_attitude_variables.h> //JUAN
+#include <uORB/topics/vehicle_local_position_setpoint.h> //JUAN
+#include <uORB/topics/vehicle_local_position.h> //JUAN
 
 using matrix::Eulerf;
 using matrix::Quatf;
@@ -108,15 +110,18 @@ private:
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};	/**< vehicle land detected subscription */
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};			/**< vehicle status subscription */
 	uORB::Subscription _vehicle_rates_sub{ORB_ID(vehicle_angular_velocity)};
-
+	//JUAN
+	uORB::Subscription _vehicle_local_position_setpoint_sub{ORB_ID(vehicle_local_position_setpoint)};
 	uORB::Subscription _juan_attitude_variables_sub{ORB_ID(juan_attitude_variables)}; //JUAN
+	uORB::Subscription _local_pos_sub{ORB_ID(vehicle_local_position)};		/**< local position subscription */
 
 	uORB::SubscriptionData<airspeed_s> _airspeed_sub{ORB_ID(airspeed)};
 
 	uORB::Publication<actuator_controls_s>		_actuators_2_pub{ORB_ID(actuator_controls_2)};		/**< actuator control group 1 setpoint (Airframe) */
 	uORB::Publication<vehicle_rates_setpoint_s>	_rate_sp_pub{ORB_ID(vehicle_rates_setpoint)};		/**< rate setpoint publication */
 	uORB::PublicationMulti<rate_ctrl_status_s>	_rate_ctrl_status_pub{ORB_ID(rate_ctrl_status)};	/**< rate controller status publication */
-
+	// JUAN
+	uORB::Publication<vehicle_local_position_setpoint_s>	_local_pos_sp_pub{ORB_ID(vehicle_local_position_setpoint)};
 	uORB::Publication<juan_attitude_variables_s>	_juan_attitude_variables_pub{ORB_ID(juan_attitude_variables)}; //JUAN
 
 	orb_id_t	_attitude_setpoint_id{nullptr};
@@ -134,8 +139,10 @@ private:
 	vehicle_global_position_s		_global_pos {};		/**< global position */
 	vehicle_rates_setpoint_s		_rates_sp {};		/* attitude rates setpoint */
 	vehicle_status_s			_vehicle_status {};	/**< vehicle status */
-
+	//JUAN
+	vehicle_local_position_setpoint_s _local_pos_sp{}; //local position setpoint
 	juan_attitude_variables_s _juan_att_var{}; // JUAN custom attitude control variables
+	vehicle_local_position_s		_local_pos {};		/**< local position */
 
 	perf_counter_t	_loop_perf;			/**< loop performance counter */
 
@@ -173,6 +180,19 @@ private:
 	float _e_int_1{0.0f};
 	float _e_int_2{0.0f};
 	float _e_int_3{0.0f};
+
+	// position control variables
+	float _pos_x_ref{0.0f}; // position references
+	float _pos_y_ref{0.0f};
+	float _pos_z_ref{0.0f};
+	float _vel_x_ref{0.0f}; // velocity references
+	float _vel_y_ref{0.0f};
+	float _vel_z_ref{0.0f};
+	float _initial_heading{0.0f}; // initialization values
+	float _pos_x_initial{0.0f};
+	float _pos_y_initial{0.0f};
+	float _pos_z_initial{0.0f};
+
 
 	struct {
 		float p_tc;
@@ -336,4 +356,11 @@ private:
 	void		vehicle_land_detected_poll();
 
 	float 		get_airspeed_and_update_scaling();
+
+	//JUAN additional functions
+	// void    JUAN_position_control();
+	void    JUAN_reference_generator(int _maneuver_type);
+	float   saturate(float value, float min, float max);
+
+
 };

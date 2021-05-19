@@ -759,6 +759,7 @@ void FixedwingAttitudeControl::Run()
 
 				// JUAN: Preparing variables for custom mode transition
 				_previous_yaw = euler_angles.psi();
+				_initial_heading = _previous_yaw;
 				_previous_time = hrt_absolute_time()/1e6;
 				_time_elapsed = 0.0f;
 				_e_int_1 = 0.0f;
@@ -768,6 +769,15 @@ void FixedwingAttitudeControl::Run()
 				_yaw_test_profile = _previous_yaw;
 				_pitch_test_profile = 0.0f;
 				_roll_test_profile = 0.0f;
+
+				_local_pos_sub.update(&_local_pos);
+				_pos_x_ref = _local_pos.x;
+				_pos_y_ref = _local_pos.y;
+				_pos_z_ref = _local_pos.z;
+
+				_vel_x_ref = _local_pos.vx;
+				_vel_y_ref = _local_pos.vy;
+				_vel_z_ref = _local_pos.vz;
 
 
 
@@ -1330,4 +1340,32 @@ int FixedwingAttitudeControl::print_status()
 int fw_att_control_main(int argc, char *argv[])
 {
 	return FixedwingAttitudeControl::main(argc, argv);
+}
+
+void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
+{
+	if (_maneuver_type == 1)
+	{
+	// if (time_elapsed <= time_stage1)
+	// {
+			float t_man = _time_elapsed;
+			float Vel_track1 = 13.0f;
+	    _vel_x_ref = Vel_track1*cosf(_initial_heading);
+	    _vel_y_ref = Vel_track1*sinf(_initial_heading);
+	    _vel_z_ref = 0.0f;
+
+	    _pos_x_ref = _pos_x_initial+Vel_track1*cosf(_initial_heading)*t_man;
+	    _pos_y_ref = _pos_y_initial+Vel_track1*sinf(_initial_heading)*t_man;
+	    _pos_z_ref = _pos_z_initial;
+	// }
+	}
+}
+
+
+float FixedwingAttitudeControl::saturate(float value, float min, float max)
+{
+  float output = value;
+  if (value < min){output = min;}
+  if (value > max){output = max;}
+  return output;
 }
