@@ -26,5 +26,8 @@ float32 yaw_reference     # yaw angle reference
 float32 pitch_reference   # pitch angle reference
 float32 roll_reference   # roll angle reference
 
+float32[3] omega_ref   # angular velocity reference in ref coord
+float32[3] omega_bod   # angular velocity measurement in body coord
+
 
 float32 test_variable    # dummy tester slot

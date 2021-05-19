@@ -155,11 +155,18 @@ private:
 	//JUAN custom variables
 	float _previous_yaw{0.0f};
 
+
+	// for attitude maneuvers
 	float _yaw_test_profile{0.0f};
 	float _roll_test_profile{0.0f};
 	float _pitch_test_profile{0.0f};
 
+	float _yaw_rate_reference{0.0f};
+	float _pitch_rate_reference{0.0f};
+	float _roll_rate_reference{0.0f};
 
+
+	// other variables
 	float _previous_time{0.0f};
 	float _ground_velocity_corrected{5.0f};
 	float _time_elapsed{0.0f};
