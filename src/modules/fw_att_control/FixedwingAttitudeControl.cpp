@@ -795,7 +795,7 @@ void FixedwingAttitudeControl::Run()
 
 				_error_heading_int = 0.0f;
 
-				_JUAN_flight_mode = 0;
+				_JUAN_flight_mode = 1;
 
 
 			} else {
@@ -970,21 +970,41 @@ void FixedwingAttitudeControl::Run()
 
 					/*... DCMs for control system ......................................*/
 
-					matrix::Dcmf C_ri = C_manual;
-					matrix::Dcmf C_ir = C_ri.transpose();
-					matrix::Dcmf C_br = C_bi*C_ir;
+					if (_JUAN_flight_mode < 1)
+					{
+						C_ri = C_manual;
+						matrix::Dcmf C_riT = C_ri.transpose();
+	 				 	matrix::Dcmf C_br_alt = C_bi*C_riT;
 
 					/*..................................................................*/
 
 					/*.............  Euler rate to angular velocicty conversion ........*/
-					matrix::Vector3f _reference_euler_rate(_roll_rate_reference,_pitch_rate_reference,_yaw_rate_reference);
-					float bldr_array_e2w[9] = {1.0f, 0.0f, -sinf(_pitch_test_profile), 0.0f, cosf(_roll_test_profile), sinf(_roll_test_profile)*cosf(_pitch_test_profile), 0.0f, -sinf(_roll_test_profile), cosf(_roll_test_profile)*cosf(_pitch_test_profile)};
-					matrix::SquareMatrix<float, 3> Bldr_Matrix_Ce2w(bldr_array_e2w);
-					matrix::Dcmf C_e2w(Bldr_Matrix_Ce2w);
-					matrix::Vector3f _omega_reference = C_e2w*_reference_euler_rate; // reference angular velocity in reference coord
-					matrix::Vector3f _omega_reference_body =  C_br*_omega_reference; // reference angular velocity in body coord
+						matrix::Vector3f _reference_euler_rate(_roll_rate_reference,_pitch_rate_reference,_yaw_rate_reference);
+						float bldr_array_e2w[9] = {1.0f, 0.0f, -sinf(_pitch_test_profile), 0.0f, cosf(_roll_test_profile), sinf(_roll_test_profile)*cosf(_pitch_test_profile), 0.0f, -sinf(_roll_test_profile), cosf(_roll_test_profile)*cosf(_pitch_test_profile)};
+						matrix::SquareMatrix<float, 3> Bldr_Matrix_Ce2w(bldr_array_e2w);
+						matrix::Dcmf C_e2w(Bldr_Matrix_Ce2w);
+						matrix::Vector3f _omega_reference = C_e2w*_reference_euler_rate; // reference angular velocity in reference coord
+						_omega_reference_body =  C_br_alt*_omega_reference; // reference angular velocity in body coord
 					/*..................................................................*/
+						_throttle_out = _manual.z;
+				 }
+				 else
+				 {
+					 JUAN_position_control();
+					 C_ri = C_ri_pos.transpose();
+					 matrix::Vector3f _omega_ref_temp(0.0f, 0.0f, 0.0f);
+					 _omega_reference_body = _omega_ref_temp;
+					 // //Thrust mappings
+ 					float Jar = 0.5f;
+ 					float kt = (-1.43909969 * Jar * Jar - 2.21240323 * Jar + 2.24512051) * powf(10.0f,-7.0f);
+ 					float omega_t = sqrtf(ThrustN/kt);
+ 					float thrust_PWM = saturate(1.6572 * powf(10.0f,-5.0f) * powf(omega_t,2.0) + .0166 * omega_t + 1121.8,1000,2000);
+ 					_throttle_out = (thrust_PWM-1000)/1000;
+					// _throttle_out = _manual.z;
+				 }
 
+				 matrix::Dcmf C_ir = C_ri.transpose();
+				 matrix::Dcmf C_br = C_bi*C_ir;
 
 					/*.......SO(3) error calculation (and definition)...................*/
 					float att_err_modifier = 1.0f; // This is the standard
@@ -1078,12 +1098,6 @@ void FixedwingAttitudeControl::Run()
 					float outputs_ele = 0.0000008317f*powf(ElevDef,3.0f) + 0.0000409759f*powf(ElevDef,2.0f) + 0.01396963f*ElevDef;
 					float outputs_rud = 0.0000007988f*powf(RudDef,3.0f) + 0.0000092020f*powf(RudDef,2.0f) + 0.0187045418f*RudDef;
 
-					// //ThrustN = 9.81f*0.45f;
-					// //Thrust mappings
-					// float Jar = 0.5f;
-					// float kt = (-1.43909969 * Jar * Jar - 2.21240323 * Jar + 2.24512051) * powf(10.0f,-7.0f);
-					// float omega_t = sqrtf(ThrustN/kt);
-					// float thrust_PWM = saturate(1.6572 * powf(10.0f,-5.0f) * powf(omega_t,2.0) + .0166 * omega_t + 1121.8,1000,2000);
 
 
 
@@ -1094,7 +1108,7 @@ void FixedwingAttitudeControl::Run()
 					_actuators.control[actuator_controls_s::INDEX_PITCH] = -outputs_ele;
 					_actuators.control[actuator_controls_s::INDEX_YAW] = -outputs_rud;
 					// Special command
-					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
+					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _throttle_out;
 					/*..................................................................*/
 
 					/*...................Custom logging ................................*/
@@ -1143,9 +1157,9 @@ void FixedwingAttitudeControl::Run()
 					_juan_att_var.attitude_error_function = att_err_function;
 
 
-					_juan_att_var.omega_ref[0] = _omega_reference(0);
-					_juan_att_var.omega_ref[1] = _omega_reference(1);
-					_juan_att_var.omega_ref[2] = _omega_reference(2);
+					_juan_att_var.omega_ref[0] = _omega_reference_body(0);
+					_juan_att_var.omega_ref[1] = _omega_reference_body(1);
+					_juan_att_var.omega_ref[2] = _omega_reference_body(2);
 
 					_juan_att_var.omega_bod[0] = x_rate_body;
 					_juan_att_var.omega_bod[1] = y_rate_body;
@@ -1514,21 +1528,21 @@ void FixedwingAttitudeControl::JUAN_position_control()
 				}
 
 				_error_heading_int = _error_heading_int + (heading_aux-_heading_test)*_delta_time_attitude;
-				float roll_com = 0.1f*(0.8f*k_roll_p*heading_com+0.5f*k_roll_i*_error_heading_int);
-				if (roll_com >= 0.0f)
-				{
-					if (roll_com > max_roll*PI_f/180)
-					{
-						roll_com = max_roll*PI_f/180;
-					}
-				}
-				else {
-					if (roll_com < -max_roll*PI_f/180)
-					{
-						roll_com = -max_roll*PI_f/180;
-					}
-			  }
-				// float roll_com = 0.0f;
+				// float roll_com = 0.1f*(0.8f*k_roll_p*heading_com+0.5f*k_roll_i*_error_heading_int);
+				// if (roll_com >= 0.0f)
+				// {
+				// 	if (roll_com > max_roll*PI_f/180)
+				// 	{
+				// 		roll_com = max_roll*PI_f/180;
+				// 	}
+				// }
+				// else {
+				// 	if (roll_com < -max_roll*PI_f/180)
+				// 	{
+				// 		roll_com = -max_roll*PI_f/180;
+				// 	}
+			  // }
+				float roll_com = 0.0f;
 
 				float m_ba11 = fv1;
 				float m_ba12 = fv2;

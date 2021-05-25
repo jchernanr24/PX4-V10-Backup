@@ -206,7 +206,9 @@ private:
 	matrix::Dcmf C_ri_pos;
 	float _error_heading_int{0.0f};
 	int _JUAN_flight_mode{0};
-
+	matrix::Vector3f _omega_reference_body;
+	float _throttle_out;
+	matrix::Dcmf C_ri;
 
 	struct {
 		float p_tc;
