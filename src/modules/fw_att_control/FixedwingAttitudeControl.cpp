@@ -1016,17 +1016,17 @@ void FixedwingAttitudeControl::Run()
 					/*..................................................................*/
 
 					/*................Attitude controller gains.........................*/
-					float Kad1 = 1.0f*0.00706f;
-					float Kad2 = 1.0f*0.07576f;
-					float Kad3 = 1.0f*0.07736f;
+					float Kad1 = 0.8f*0.00706f;
+					float Kad2 = 0.5f*0.07576f;
+					float Kad3 = 0.7f*0.07736f;
 
 					float Kap1 = 1.0f*0.1656f;
 					float Kap2 = 1.0f*1.022f;
 					float Kap3 = 1.0f*0.6776f;
 
-					float Kai1 = 1.2f*0.1656f;
-					float Kai2 = 1.2f*1.022f;
-					float Kai3 = 1.2f*0.6776f;
+					float Kai1 = 0.8f*0.1656f;
+					float Kai2 = 0.8f*1.022f;
+					float Kai3 = 0.8f*0.6776f;
 					/*..................................................................*/
 
 
@@ -1165,7 +1165,7 @@ void FixedwingAttitudeControl::Run()
 
 
 
-					_juan_att_var.test_variable = 1.0f;
+					_juan_att_var.test_variable = 4.0f;
 
 
 					// matrix::Eulerf euler_ref(C_ri.transpose());
