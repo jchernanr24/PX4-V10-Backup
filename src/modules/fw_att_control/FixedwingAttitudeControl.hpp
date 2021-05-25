@@ -200,6 +200,13 @@ private:
 	float C_reference_rows[9] = {1.0f, 0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,1.0f};
 	float ThrustN{0.0f};
 	int _control_operation_mode{0}; // controller exception management
+	float belly_n_old;
+	float belly_e_old;
+	matrix::Dcmf C_bi;
+	matrix::Dcmf C_ri_pos;
+	float _error_heading_int{0.0f};
+	int _JUAN_flight_mode{0};
+
 
 	struct {
 		float p_tc;
@@ -368,6 +375,6 @@ private:
 	void    JUAN_position_control();
 	void    JUAN_reference_generator(int _maneuver_type);
 	float   saturate(float value, float min, float max);
-
+	void    JUAN_singularity_management(float xy_speed, float angle_vect);
 
 };
