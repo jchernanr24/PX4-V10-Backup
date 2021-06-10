@@ -40,3 +40,14 @@ float32 reference_position_z # down reference
 float32 estimated_position_x # north estimated
 float32 estimated_position_y # east estimated
 float32 estimated_position_z # down estimated
+
+float32 estimated_velocity_x # north vel estimated
+float32 estimated_velocity_y # east vel estimated
+float32 estimated_velocity_z # down vel estimated
+
+
+
+float32 control_status # singularity management
+
+float32 true_airspeed # true airspeed tests
+float32 indicated_airspeed #indicated airspeed test

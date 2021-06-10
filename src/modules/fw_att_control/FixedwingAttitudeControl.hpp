@@ -209,6 +209,10 @@ private:
 	matrix::Vector3f _omega_reference_body;
 	float _throttle_out;
 	matrix::Dcmf C_ri;
+	float _previous_rpm{900.0f};
+	float _advance_ratio{0.5f};
+	matrix::Vector3f _alpha_reference_body;
+
 
 	struct {
 		float p_tc;
@@ -276,6 +280,8 @@ private:
 
 		int32_t bat_scale_en;			/**< Battery scaling enabled */
 		bool airspeed_disabled;
+
+
 
 
 
