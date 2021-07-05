@@ -846,71 +846,71 @@ void FixedwingAttitudeControl::Run()
 
 					// // Manual attitude mode start
 
-					float _manual_roll = _read_roll_stick*0.785f;
-					float _manual_pitch = _read_pitch_stick*-0.785f;
-
-
-
-
-					// Velocity
-					matrix::Vector3f _inertial_velocity(_global_pos.vel_n, _global_pos.vel_e, _global_pos.vel_d);
-					matrix::Vector3f _body_velocity = C_bi*_inertial_velocity;
-					float _vel_ground = sqrtf(_body_velocity(0)*_body_velocity(0)+_body_velocity(1)+_body_velocity(1));
-
-
-
-					if (_vel_ground <5.0f){
-						_ground_velocity_corrected = 5.0f;
-					}
-					else {
-						_ground_velocity_corrected = _vel_ground;
-					}
-					// float _vel_ground = 5.0f;
-
-					// float _vel_ground = 10.0f;
-
-					// JUAN note: tangent can cause issues if roll is allowed to go to 90 degrees!
-					float _heading_rate_coordinated = 1.5f*9.81f/_ground_velocity_corrected * tanf(_manual_roll);
-
-					float _manual_yaw = _delta_time_attitude*_heading_rate_coordinated+_previous_yaw;
-					bool _manual_yaw_check = PX4_ISFINITE(_manual_yaw);
-
-					if (_manual_yaw_check)
-					{
-						_previous_yaw = _manual_yaw;
-					}
-					else{
-						_manual_yaw = _previous_yaw;
-					}
-					_roll_rate_reference = 0.0f;
-					_pitch_rate_reference = 0.0f;
-					_yaw_rate_reference = _heading_rate_coordinated;
+					// float _manual_roll = _read_roll_stick*0.785f;
+					// float _manual_pitch = _read_pitch_stick*-0.785f;
+					//
+					//
+					//
+					//
+					// // Velocity
+					// matrix::Vector3f _inertial_velocity(_global_pos.vel_n, _global_pos.vel_e, _global_pos.vel_d);
+					// matrix::Vector3f _body_velocity = C_bi*_inertial_velocity;
+					// float _vel_ground = sqrtf(_body_velocity(0)*_body_velocity(0)+_body_velocity(1)+_body_velocity(1));
+					//
+					//
+					//
+					// if (_vel_ground <5.0f){
+					// 	_ground_velocity_corrected = 5.0f;
+					// }
+					// else {
+					// 	_ground_velocity_corrected = _vel_ground;
+					// }
+					// // float _vel_ground = 5.0f;
+					//
+					// // float _vel_ground = 10.0f;
+					//
+					// // JUAN note: tangent can cause issues if roll is allowed to go to 90 degrees!
+					// float _heading_rate_coordinated = 1.5f*9.81f/_ground_velocity_corrected * tanf(_manual_roll);
+					//
+					// float _manual_yaw = _delta_time_attitude*_heading_rate_coordinated+_previous_yaw;
+					// bool _manual_yaw_check = PX4_ISFINITE(_manual_yaw);
+					//
+					// if (_manual_yaw_check)
+					// {
+					// 	_previous_yaw = _manual_yaw;
+					// }
+					// else{
+					// 	_manual_yaw = _previous_yaw;
+					// }
+					// _roll_rate_reference = 0.0f;
+					// _pitch_rate_reference = 0.0f;
+					// _yaw_rate_reference = _heading_rate_coordinated;
 
 
 					// Manual attitude end
 
 
 					/* ........................ Loop profile ...........................*/
-					// if (_time_elapsed < 1.0f){
-					// 	_pitch_test_profile = 0.0f;
-					// 	_pitch_rate_reference = 0.0f;
-					// }
-					// else if (_time_elapsed <3.0f){
-					// 	_pitch_rate_reference = 3.1416f;
-					// 	_pitch_test_profile = _pitch_test_profile + _pitch_rate_reference*_delta_time_attitude;
-					// }
-					// else{
-					// 	_pitch_rate_reference = 0.0f;
-					// 	_pitch_test_profile = 0.0f;
-					// }
-					// _yaw_rate_reference = 0.0f;
-					// _roll_rate_reference = 0.0f;
-					//
-					// float _manual_yaw = _yaw_test_profile;
-					// float _manual_roll = _roll_test_profile;
-					// float _manual_pitch = _pitch_test_profile;
-					// float _heading_rate_coordinated = -1.0f;
-					// float _ground_velocity_corrected = -1.0f;
+					if (_time_elapsed < 1.0f){
+						_pitch_test_profile = 0.0f;
+						_pitch_rate_reference = 0.0f;
+					}
+					else if (_time_elapsed <3.0f){
+						_pitch_rate_reference = 3.1416f;
+						_pitch_test_profile = _pitch_test_profile + _pitch_rate_reference*_delta_time_attitude;
+					}
+					else{
+						_pitch_rate_reference = 0.0f;
+						_pitch_test_profile = 0.0f;
+					}
+					_yaw_rate_reference = 0.0f;
+					_roll_rate_reference = 0.0f;
+
+					float _manual_yaw = _yaw_test_profile;
+					float _manual_roll = _roll_test_profile;
+					float _manual_pitch = _pitch_test_profile;
+					float _heading_rate_coordinated = -1.0f;
+					float _ground_velocity_corrected = -1.0f;
 					/*.................. End Loop profile ..............................*/
 
 					/*..................  ATA profile   ................................*/
@@ -999,9 +999,9 @@ void FixedwingAttitudeControl::Run()
 					 JUAN_position_control();
 					 C_ri = C_ri_pos.transpose();
 					 matrix::Vector3f _omega_ref_temp(0.0f, 0.0f, 0.0f); // change for command filter
-					 matrix::Vector3f _alpha_ref_temp(0.0f, 0.0f, 0.0f);
 					 _omega_reference_body = _omega_ref_temp;
-					 _alpha_reference_body = _alpha_ref_temp;
+
+
 					 // //Thrust mappings
 
 
@@ -1020,11 +1020,14 @@ void FixedwingAttitudeControl::Run()
 					// }
 					// else
 					// {
-					// 	float _norm_vel =  sqrtf(_local_pos.vx*_local_pos.vx+_local_pos.vy*_local_pos.vy+_local_pos.vz+_local_pos.vz);
+					// 	float _norm_vel =  sqrtf(_local_pos.vx*_local_pos.vx+_local_pos.vy*_local_pos.vy+_local_pos.vz*_local_pos.vz);
 					// 	_advance_ratio = _norm_vel/(0.254f*(_previous_rpm/60.0f));
 					// }
 					// float Jar = saturate(_advance_ratio,0.0f,0.5f);
 					/*..................................................................*/
+
+
+					_global_jar = Jar;
 
  					float kt = (-1.43909969 * Jar * Jar - 2.21240323 * Jar + 2.24512051) * powf(10.0f,-7.0f);
  					float omega_t = sqrtf(ThrustN/kt);
@@ -1108,6 +1111,9 @@ void FixedwingAttitudeControl::Run()
 					/*..................................................................*/
 
 
+
+
+
 					// /* Integral errors */
 					_e_int_1 = _e_int_1 + _delta_time_attitude*_e_int_1;
 					_e_int_2 = _e_int_2 + _delta_time_attitude*_e_int_2;
@@ -1130,9 +1136,61 @@ void FixedwingAttitudeControl::Run()
 					// float tau_2 = -0.8f*Kad2*y_rate_body+1.0f*Kap2*err_att_2+Kai2*_e_int_2;
 					// float tau_3 = -0.8f*Kad3*z_rate_body+0.8f*Kap3*err_att_3+Kai3*_e_int_3;
 
+
+					/*................. Final one!!!! ...................................*/
 					float tau_1 = -0.7f*Kad1*(x_rate_body-_omega_reference_body(0))+0.8f*Kap1*err_att_1+Kai1*_e_int_1;
 					float tau_2 = -0.8f*Kad2*(y_rate_body-_omega_reference_body(1))+1.0f*Kap2*err_att_2+Kai2*_e_int_2;
 					float tau_3 = -0.8f*Kad3*(z_rate_body-_omega_reference_body(2))+0.8f*Kap3*err_att_3+Kai3*_e_int_3;
+
+
+/*.........Alternative Tracking control law ..................................*/
+//
+// 					/*.......Tracking law attitude controller gains.....................*/
+// 					float la1 = 2.0f;
+// 					float la2 = 2.0f;
+// 					float la3 = 2.0f;
+//
+// 					float Kapp1 = Kap1 - la1*Kad1;
+// 					float Kapp2 = Kap2 - la2*Kad2;
+// 					float Kapp3 = Kap3 - la3*Kad3;
+//
+// 					/*.......Angular velocity error and composite error.................*/
+// 					matrix::Vector3f _error_attitude(err_att_1,err_att_2,err_att_3);
+// 					matrix::Vector3f _omega_estimate(x_rate_body,y_rate_body,z_rate_body);
+// 					matrix::Vector3f _omega_tilde(0.0f,0.0f,0.0f);
+// 					_omega_tilde = _omega_estimate - _omega_reference_body;
+// 					matrix::Vector3f _sigma_error(_omega_tilde(0)-la1*err_att_1,_omega_tilde(1)-la2*err_att_2,_omega_tilde(2)-la3*err_att_3);
+// 					matrix::Vector3f _omega_aux(_omega_reference_body(0)+la1*err_att_1,_omega_reference_body(1)+la2*err_att_2,_omega_reference_body(2)-la3*err_att_3);
+//
+//
+// 					/*.....Control law..................................................*/
+// 					float bldr_array_inertia[9] = {0.003922f, 0.0f, -0.000441f,0.0f, 0.01594f,0.0f,-0.000441f,0.0f,0.01934f};
+// 					matrix::SquareMatrix<float, 3> _inertia_tensor(bldr_array_inertia);
+//
+// 					matrix::Vector3f _alpha_ref_temp(0.0f, 0.0f, 0.0f);
+// 					_alpha_reference_body = _alpha_ref_temp;
+//
+// 					float _temp_scalar_1 = _alpha_reference_body(0)+la1/2.0f*(C_br(0,1)*_omega_tilde(1) + C_br(0,2)*_omega_tilde(2) - C_br(1,1)*_omega_tilde(0) - C_br(2,2)*_omega_tilde(0));
+// 					float _temp_scalar_2 = _alpha_reference_body(1)-la2/2.0f*(C_br(0,0)*_omega_tilde(1) - C_br(1,0)*_omega_tilde(0) - C_br(1,2)*_omega_tilde(2) + C_br(2,2)*_omega_tilde(1));
+// 					float _temp_scalar_3 = _alpha_reference_body(2)+la3/2.0f*(C_br(2,0)*_omega_tilde(0) - C_br(1,1)*_omega_tilde(2) - C_br(0,0)*_omega_tilde(2) + C_br(2,1)*_omega_tilde(1));
+// 					matrix::Vector3f _temp_vector(_temp_scalar_1,_temp_scalar_2,_temp_scalar_3);
+// 					matrix::Vector3f _tau_ff(0.0f,0.0f,0.0f);
+// 					_tau_ff = _inertia_tensor*_temp_vector;
+//
+// 					float bldr_array_crossm[9] = {0.0f, -_omega_aux(2), _omega_aux(1), _omega_aux(2), 0.0f, -_omega_aux(0), -_omega_aux(1), _omega_aux(0),0.0f};
+// 					matrix::SquareMatrix<float, 3> _crossm_omega_aux(bldr_array_crossm);
+// 					matrix::Vector3f _tau_plus(0.0f,0.0f,0.0f);
+// 					_tau_plus = _crossm_omega_aux*_inertia_tensor*_omega_estimate;
+//
+// 					float tau_1 = -0.7f*Kad1*(x_rate_body-_omega_reference_body(0))+0.8f*Kap1*err_att_1+_tau_ff(0)+_tau_plus(0);
+// 					float tau_2 = -0.8f*Kad2*(y_rate_body-_omega_reference_body(1))+1.0f*Kap2*err_att_2+_tau_ff(1)+_tau_plus(1);
+// 					float tau_3 = -0.8f*Kad3*(z_rate_body-_omega_reference_body(2))+0.8f*Kap3*err_att_3+_tau_ff(2)+_tau_plus(2);
+//
+//
+//
+//
+// /*............................................................................*/
+
 
 					/* .........................Control allocation......................*/
 					float Vs = 5.0f;
@@ -1241,7 +1299,7 @@ void FixedwingAttitudeControl::Run()
 
 
 
-					_juan_att_var.test_variable = 1.0f;
+					_juan_att_var.test_variable = 12.0f;
 
 
 					// matrix::Eulerf euler_ref(C_ri.transpose());
@@ -1284,6 +1342,8 @@ void FixedwingAttitudeControl::Run()
 
 
 						_juan_att_var.control_status = _control_operation_mode;
+						_juan_att_var.j_advance = _global_jar;
+						_juan_att_var.omega_rpm = _previous_rpm;
 				  }
 
 
@@ -1705,7 +1765,7 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 	// if (time_elapsed <= time_stage1)
 	// {
 			float t_man = _time_elapsed;
-			float Vel_track1 = 9.0f;
+			float Vel_track1 = 10.0f;
 	    _vel_x_ref = Vel_track1*cosf(_initial_heading);
 	    _vel_y_ref = Vel_track1*sinf(_initial_heading);
 	    _vel_z_ref = 0.0f;
@@ -1718,9 +1778,9 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 	else if (_maneuver_type == 2)
 	{
 		float t_man = _time_elapsed;
-		float V_i = 10.0f;
-		float t_init = 5.0;
-		float t_stop = 3.0f;
+		float V_i = 5.0f;
+		float t_init = 2.0;
+		float t_stop = 2.0f;
 		float a_slow = -V_i/t_stop;
 		if (t_man < t_init)
 		{

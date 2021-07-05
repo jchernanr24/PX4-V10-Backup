@@ -51,3 +51,5 @@ float32 control_status # singularity management
 
 float32 true_airspeed # true airspeed tests
 float32 indicated_airspeed #indicated airspeed test
+float32 j_advance #advance ratio
+float32 omega_rpm #previous omega

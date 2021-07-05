@@ -212,6 +212,7 @@ private:
 	float _previous_rpm{900.0f};
 	float _advance_ratio{0.5f};
 	matrix::Vector3f _alpha_reference_body;
+	float _global_jar;
 
 
 	struct {
