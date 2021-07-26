@@ -123,12 +123,12 @@ set(models
 	plane_lidar
 	r1_rover
 	rover
+	mcfoamy
 	shell
 	solo
 	standard_vtol
 	standard_vtol_drop
 	tailsitter
-	techpod
 	tiltrotor
 	typhoon_h480
 	uuv_bluerov2_heavy
@@ -145,6 +145,7 @@ set(worlds
 	warehouse
 	windy
 	yosemite
+	mcfoamy
 )
 
 set(all_posix_vmd_make_targets)
