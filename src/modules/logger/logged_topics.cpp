@@ -123,6 +123,9 @@ void LoggedTopics::add_default_topics()
 	add_topic("vehicle_thrust_setpoint", 20);
 	add_topic("vehicle_torque_setpoint", 20);
 
+	//Juan's topic
+	add_topic("juan_attitude_variables", 100);
+
 	// multi topics
 	add_topic_multi("actuator_outputs", 100, 3);
 	add_topic_multi("airspeed_wind", 1000);

@@ -203,9 +203,11 @@ private:
 	float _pos_x_initial{0.0f};
 	float _pos_y_initial{0.0f};
 	float _pos_z_initial{0.0f};
+	float _initial_vxy{0.0f};
 	float _error_x_int{0.0f};
 	float _error_y_int{0.0f};
 	float _error_z_int{0.0f};
+
 	// Position controller outputs: ref. DCM and thrust command.
 	float C_reference_rows[9] = {1.0f, 0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,1.0f};
 	float ThrustN{0.0f};

@@ -594,6 +594,68 @@ void FixedwingAttitudeControl::Run()
 
 				_rate_sp_pub.publish(_rates_sp);
 
+				//Initialize acro
+				// JUAN: Preparing variables for custom mode transition
+				_previous_yaw = euler_angles.psi();
+				// _initial_heading = _previous_yaw;
+				_initial_heading = atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
+				_initial_vxy = sqrtf(_local_pos.vy*_local_pos.vy + _local_pos.vx*_local_pos.vx);
+				_previous_time = hrt_absolute_time()/1e6;
+				_time_elapsed = 0.0f;
+				_e_int_1 = 0.0f;
+				_e_int_2 = 0.0f;
+				_e_int_3 = 0.0f;
+
+				_error_x_int = 0.0f;
+				_error_y_int = 0.0f;
+				_error_z_int = 0.0f;
+
+				_control_operation_mode = 0;
+
+
+				_yaw_test_profile = _previous_yaw;
+				_pitch_test_profile = 0.0f;
+				_roll_test_profile = 0.0f;
+
+				_local_pos_sub.update(&_local_pos);
+				float _added_initial_distance = 10.0f;
+
+				_pos_x_ref = _local_pos.x+_added_initial_distance*cosf(_initial_heading);
+				_pos_y_ref = _local_pos.y+_added_initial_distance*sinf(_initial_heading);
+				_pos_z_ref = _local_pos.z;
+
+				_pos_x_initial = _pos_x_ref;
+				_pos_y_initial = _pos_y_ref;
+				_pos_z_initial = _pos_z_ref;
+
+				/* ---- set man flag for new run ---- */
+				completeFlag = false;
+				t_last = 0; //Reset final time
+				turnCount = 0;
+
+				/* -- for resetting path -- */
+				_pos_x_last_vtx = 0.0f;
+				_pos_y_last_vtx = 0.0f;
+
+				t_last_vertex = 0.0f;
+				turnCount = 0;
+
+
+				/* ---- reset feedforward stuff ---- */
+				// feedforward_flag = true;
+				// _juan_att_var.feedforward_on = true;
+
+
+				_vel_x_ref = _local_pos.vx;
+				_vel_y_ref = _local_pos.vy;
+				_vel_z_ref = _local_pos.vz;
+
+				_error_heading_int = 0.0f;
+
+				_JUAN_flight_mode = 0;
+
+				_previous_rpm = 900.0f;
+
 			} else {
 				vehicle_rates_setpoint_poll();
 
@@ -799,11 +861,12 @@ void FixedwingAttitudeControl::Run()
 
 						if (feedforward_flag)
 						{
+							wind_estimate_poll(); //update estimate
 							wind_ff_rot_update(); //update R_wind
 							matrix::Dcmf temp_C_ri = C_ri*R_wind; //avoid any weirdness like in Eigen
 							C_ri = temp_C_ri;
 						}
-
+						_juan_att_var.feedforward_on = feedforward_flag;
 						matrix::Vector3f _omega_ref_temp(0.0f, 0.0f, 0.0f); // change for command filter
 						_omega_reference_body = _omega_ref_temp;
 
@@ -1369,7 +1432,7 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// Call JUAN Maneuver generator. This assigns a position setpoint.
 
 	// NOTE!!!!!!!!!!! Check Qground disarm parameters!!!!!!
-	 JUAN_reference_generator(3); //3 == zigzag
+	 JUAN_reference_generator(4); //3 == zigzag
 
 	// Control law
 	float _error_pos_x = _pos_x_ref-_pos_x_est;
@@ -1571,8 +1634,6 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 {
 	if (_maneuver_type == 1)
 	{
-	// if (time_elapsed <= time_stage1)
-	// {
 	float t_man = _time_elapsed;
 	float Vel_track1 = 10.0f;
 	    _vel_x_ref = Vel_track1*cosf(_initial_heading);
@@ -1625,7 +1686,6 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 			_pos_z_ref = _pos_z_initial;
 
 		}
-
 
 	}
 	else if (_maneuver_type == 3) //Jackson's path, zigzag
@@ -1690,9 +1750,28 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 
 			/* ---- reset feedforward stuff ---- */
 			feedforward_flag = true;
-			_juan_att_var.feedforward_on = true;
+			// _juan_att_var.feedforward_on = true;
 
 		}
+	}
+	else if(_maneuver_type == 4) //Straight path, turn wff on and off
+	{
+		float t_man = _time_elapsed;
+		// float Vel_track1 = 10.0f;
+		float Vel_track1 = _initial_vxy;
+		float t_switch_ff = 20.0f;
+
+		if(t_man < t_switch_ff){ feedforward_flag = true; }
+		else { feedforward_flag = false; if(!exitMsgSent){{PX4_INFO("Switching to no-feedforward"); exitMsgSent = true;}}}
+
+		_vel_x_ref = Vel_track1*cosf(_initial_heading);
+		_vel_y_ref = Vel_track1*sinf(_initial_heading);
+		_vel_z_ref = 0.0f;
+
+		_pos_x_ref = _pos_x_initial+Vel_track1*cosf(_initial_heading)*t_man;
+		_pos_y_ref = _pos_y_initial+Vel_track1*sinf(_initial_heading)*t_man;
+		_pos_z_ref = _pos_z_initial;
+
 	}
 
 
@@ -1708,6 +1787,7 @@ float FixedwingAttitudeControl::saturate(float value, float min, float max)
 
 void FixedwingAttitudeControl::wind_ff_rot_update()
 {
+
 	/* ---- Wind vector ---- */
 	float v_wind_N = _wind.windspeed_north;
 	float v_wind_E = _wind.windspeed_east;
@@ -1752,10 +1832,10 @@ void FixedwingAttitudeControl::wind_ff_rot_update()
 
 	matrix::Dcmf Civ_tild = Cv_tildi.transpose();
 
-	R_wind = Cvii * Civ_tild;
+	R_wind = (Cvii * Civ_tild).transpose();
 
 	_juan_att_var.crab_angle_ff = acosf(  R_wind(0,0) );
-	_juan_att_var.feedforward_on = true;
+	// _juan_att_var.feedforward_on = true;
 
 	_juan_att_var.r_wind_rows[0] =  R_wind(0,0);
 	_juan_att_var.r_wind_rows[1] =  R_wind(0,1);
