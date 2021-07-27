@@ -101,6 +101,7 @@ set(debuggers
 )
 
 set(models
+	mcfoamy
 	none
 	boat
 	cloudship
@@ -145,6 +146,7 @@ set(worlds
 	warehouse
 	windy
 	yosemite
+	mcfoamy
 )
 
 set(all_posix_vmd_make_targets)
