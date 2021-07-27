@@ -1759,7 +1759,7 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 		float t_man = _time_elapsed;
 		// float Vel_track1 = 10.0f;
 		float Vel_track1 = _initial_vxy;
-		float t_switch_ff = 20.0f;
+		float t_switch_ff = 40.0f;
 
 		if(t_man < t_switch_ff){ feedforward_flag = true; }
 		else { feedforward_flag = false; if(!exitMsgSent){{PX4_INFO("Switching to no-feedforward"); exitMsgSent = true;}}}
