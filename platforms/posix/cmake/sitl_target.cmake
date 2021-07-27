@@ -101,6 +101,7 @@ set(debuggers
 )
 
 set(models
+	mcfoamy
 	none
 	boat
 	cloudship
