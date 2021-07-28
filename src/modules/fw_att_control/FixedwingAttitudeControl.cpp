@@ -618,11 +618,11 @@ void FixedwingAttitudeControl::Run()
 				_roll_test_profile = 0.0f;
 
 				_local_pos_sub.update(&_local_pos);
-				float _added_initial_distance = 10.0f;
+				float _added_initial_distance = 23.0f;
 
 				_pos_x_ref = _local_pos.x+_added_initial_distance*cosf(_initial_heading);
 				_pos_y_ref = _local_pos.y+_added_initial_distance*sinf(_initial_heading);
-				_pos_z_ref = _local_pos.z;
+				_pos_z_ref = _local_pos.z + 1.29f; //McFoamy is usually a few meters above the path
 
 				_pos_x_initial = _pos_x_ref;
 				_pos_y_initial = _pos_y_ref;
@@ -1396,13 +1396,13 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// Not variables; Make these constants later
 	float _gravity_const = 9.81f;
 	float _mass_const = 0.45f;
-	// Position Control Gains
-	float KpX = 0.75f*0.6f*1.0f*3*0.1f*1.8f;
-	float KpY = 0.75f*0.6f*1.0f*3*0.1f*1.8f;
-	float KpZ =  0.75f*0.7f*6*0.1f*6.0f;
-	float KdX = 0.7f*0.9f*1.0f*0.5f*0.42f;
-	float KdY = 0.7f*0.9f*1.0f*0.5f*0.42f;
-	float KdZ = 0.7f*0.9f*1.0f*0.5f*0.21f;
+	// Position Control Gains 1.5 for sitl
+	float KpX = 1.5f * 	0.75f*0.6f*1.0f*3*0.1f*1.8f;
+	float KpY = 1.5f * 	0.75f*0.6f*1.0f*3*0.1f*1.8f;
+	float KpZ = 1.5f * 	0.75f*0.7f*6*0.1f*6.0f;
+	float KdX = 1.5f * 	0.7f*0.9f*1.0f*0.5f*0.42f;
+	float KdY = 1.5f * 	0.7f*0.9f*1.0f*0.5f*0.42f;
+	float KdZ = 1.5f * 	0.7f*0.9f*1.0f*0.5f*0.21f;
 	float KiX = 0.25f*0.0008f;
 	float KiY = 0.25f*0.0008f;
 	float KiZ = 0.25f*0.0004f;
