@@ -213,6 +213,10 @@ private:
 	float _advance_ratio{0.5f};
 	matrix::Vector3f _alpha_reference_body;
 	float _global_jar;
+	float att_err_modifier{1.0f};
+	float fv1{0.0f};
+	float fv2{0.0f};
+	float fv3{0.0f};
 
 
 	struct {
@@ -281,7 +285,6 @@ private:
 
 		int32_t bat_scale_en;			/**< Battery scaling enabled */
 		bool airspeed_disabled;
-
 
 
 

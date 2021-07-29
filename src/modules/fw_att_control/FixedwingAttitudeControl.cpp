@@ -534,6 +534,7 @@ void FixedwingAttitudeControl::Run()
 		vehicle_control_mode_poll();
 		vehicle_manual_poll();
 		_global_pos_sub.update(&_global_pos);
+		_local_pos_sub.update(&_local_pos);
 		vehicle_land_detected_poll();
 
 
@@ -797,7 +798,7 @@ void FixedwingAttitudeControl::Run()
 
 				_error_heading_int = 0.0f;
 
-				_JUAN_flight_mode = 0;
+				_JUAN_flight_mode = 1;
 
 				_previous_rpm = 900.0f;
 
@@ -842,6 +843,11 @@ void FixedwingAttitudeControl::Run()
 					float _read_roll_stick = _manual.y;
 					float _read_pitch_stick = _manual.x;
 					float _read_thrust_stick = _manual.z;
+
+					float _current_position_x = _local_pos.x;
+					float _current_position_y = _local_pos.y;
+					float _current_position_z = _local_pos.z;
+
 
 
 					// // Manual attitude mode start
@@ -888,6 +894,32 @@ void FixedwingAttitudeControl::Run()
 
 
 					// Manual attitude end
+
+
+					/*.......................Sudden pitch SO3 error functions test......*/
+					// if (_time_elapsed < 2.0f){
+					// 	_pitch_test_profile = 0.1745f;
+					// 	_pitch_rate_reference = 0.0f;
+					// }
+					// else if (_time_elapsed < 4.0f){
+					// 	_pitch_rate_reference = 0.0f;
+					// 	_pitch_test_profile = 2.9671f;
+					// }
+					// else{
+					// 	_pitch_test_profile = 0.1745f;
+					// 	_pitch_rate_reference = 0.0f;
+					// }
+					// _yaw_rate_reference = 0.0f;
+					// _roll_rate_reference = 0.0f;
+					//
+					// float _manual_yaw = _yaw_test_profile;
+					// float _manual_roll = _roll_test_profile;
+					// float _manual_pitch = _pitch_test_profile;
+					// float _heading_rate_coordinated = -1.0f;
+					// float _ground_velocity_corrected = -1.0f;
+
+
+					/*......................End sudden flip.............................*/
 
 
 					/* ........................ Loop profile ...........................*/
@@ -992,7 +1024,10 @@ void FixedwingAttitudeControl::Run()
 						matrix::Vector3f _omega_reference = C_e2w*_reference_euler_rate; // reference angular velocity in reference coord
 						_omega_reference_body =  C_br_alt*_omega_reference; // reference angular velocity in body coord
 					/*..................................................................*/
-						_throttle_out = _manual.z;
+						_throttle_out = 1;
+						// _throttle_out = _manual.z;
+
+
 				 }
 				 else
 				 {
@@ -1011,18 +1046,16 @@ void FixedwingAttitudeControl::Run()
  					float Jar = 0.5f;
 
 					/*..........Proper advance ratio calculation........................*/
-					// float _vel_x_est = _local_pos.vx;
- 					// float _vel_y_est = _local_pos.vy;
- 					// float _vel_z_est = _local_pos.vz;
+					float _vel_x_est = _local_pos.vx;
+ 					float _vel_y_est = _local_pos.vy;
+ 					float _vel_z_est = _local_pos.vz;
 					// if (_previous_rpm < 1000)
 					// {
-					// 	_advance_ratio = 0.5f;
+					// 	_previous_rpm = 1000.0f;
 					// }
-					// else
-					// {
-					// 	float _norm_vel =  sqrtf(_local_pos.vx*_local_pos.vx+_local_pos.vy*_local_pos.vy+_local_pos.vz*_local_pos.vz);
-					// 	_advance_ratio = _norm_vel/(0.254f*(_previous_rpm/60.0f));
-					// }
+					// float _norm_vel =  sqrtf(_local_pos.vx*_local_pos.vx+_local_pos.vy*_local_pos.vy+_local_pos.vz*_local_pos.vz);
+					// _advance_ratio = _norm_vel/(0.254f*(_previous_rpm/60.0f));
+					//
 					// float Jar = saturate(_advance_ratio,0.0f,0.5f);
 					/*..................................................................*/
 
@@ -1043,22 +1076,20 @@ void FixedwingAttitudeControl::Run()
 				 matrix::Dcmf C_br = C_bi*C_ir;
 
 					/*.......SO(3) error calculation (and definition)...................*/
-					float att_err_modifier = 1.0f; // This is the standard
+					// att_err_modifier = 1.0f; // This is the standard
 					float att_err_function = 0.0f;
 
-					// float trace_C = C_br(0,0) + C_br(1,1) + C_br(2,2);
-					// float err_att_aux = 1+trace_C;
-					// if (err_att_aux < 0.01)
-					// {
-					// 	att_err_modifier = 1.0f;
-					// }
-					// else
-					// {
-					// 	// att_err_modifier = 2.0f/sqrtf(1+trace_C); //t. lee
-					//  // float att_err_function = 1.0f;
-					// 	att_err_modifier = 4.0f/(1+trace_C); //forbes
-					// float att_err_function = 2.0f;
-					// }
+					float trace_C = C_br(0,0) + C_br(1,1) + C_br(2,2);
+					float err_att_aux = 1+trace_C;
+					if (err_att_aux < 0.01)
+					{
+						att_err_modifier = 1.0f;
+					}
+					else
+					{
+						att_err_modifier = 1.0f/sqrtf(1+trace_C); //t. lee
+						// att_err_modifier = 4.0f/(1+trace_C); //forbes
+					}
 
 					//C_br = C_br.transpose();
 
@@ -1138,9 +1169,13 @@ void FixedwingAttitudeControl::Run()
 
 
 					/*................. Final one!!!! ...................................*/
-					float tau_1 = -0.7f*Kad1*(x_rate_body-_omega_reference_body(0))+0.8f*Kap1*err_att_1+Kai1*_e_int_1;
-					float tau_2 = -0.8f*Kad2*(y_rate_body-_omega_reference_body(1))+1.0f*Kap2*err_att_2+Kai2*_e_int_2;
-					float tau_3 = -0.8f*Kad3*(z_rate_body-_omega_reference_body(2))+0.8f*Kap3*err_att_3+Kai3*_e_int_3;
+					// float tau_1 = -0.7f*Kad1*(x_rate_body-_omega_reference_body(0))+0.8f*Kap1*err_att_1+Kai1*_e_int_1;
+					// float tau_2 = -0.8f*Kad2*(y_rate_body-_omega_reference_body(1))+1.0f*Kap2*err_att_cww	2+Kai2*_e_int_2;
+					// float tau_3 = -0.8f*Kad3*(z_rate_body-_omega_reference_body(2))+0.8f*Kap3*err_att_3+Kai3*_e_int_3;
+
+					float tau_1 = -0.7f*Kad1*(x_rate_body-_omega_reference_body(0))+1.2f*0.8f*Kap1*err_att_1+Kai1*_e_int_1;
+					float tau_2 = -0.6f*Kad2*(y_rate_body-_omega_reference_body(1))+1.2f*0.8f*Kap2*err_att_2+Kai2*_e_int_2;
+					float tau_3 = -0.8f*Kad3*(z_rate_body-_omega_reference_body(2))+1.2f*0.8f*Kap3*err_att_3+Kai3*_e_int_3;
 
 
 /*.........Alternative Tracking control law ..................................*/
@@ -1290,16 +1325,16 @@ void FixedwingAttitudeControl::Run()
 					_juan_att_var.cri_rows[7] = C_ri(2,1);
 					_juan_att_var.cri_rows[8] = C_ri(2,2);
 
-					_airspeed_sub.update();
- 				 	float _airsp_indi_logged = _airspeed_sub.get().indicated_airspeed_m_s;
-					float _airsp_true_logged = _airspeed_sub.get().true_airspeed_m_s;
+					// _airspeed_sub.update();
+ 				 	// float _airsp_indi_logged = _airspeed_sub.get().indicated_airspeed_m_s;
+					// float _airsp_true_logged = _airspeed_sub.get().true_airspeed_m_s;
+					//
+					// _juan_att_var.true_airspeed = _airsp_true_logged;
+					// _juan_att_var.indicated_airspeed = _airsp_indi_logged;
 
-					_juan_att_var.true_airspeed = _airsp_true_logged;
-					_juan_att_var.indicated_airspeed = _airsp_indi_logged;
 
 
-
-					_juan_att_var.test_variable = 12.0f;
+					_juan_att_var.test_variable = 11.0f;
 
 
 					// matrix::Eulerf euler_ref(C_ri.transpose());
@@ -1344,8 +1379,35 @@ void FixedwingAttitudeControl::Run()
 						_juan_att_var.control_status = _control_operation_mode;
 						_juan_att_var.j_advance = _global_jar;
 						_juan_att_var.omega_rpm = _previous_rpm;
-				  }
 
+
+						_juan_att_var.virtual_force[0] = fv1;
+						_juan_att_var.virtual_force[1] = fv2;
+						_juan_att_var.virtual_force[2] = fv3;
+
+
+				  }
+					else {
+						_juan_att_var.reference_position_x = _current_position_x;
+						_juan_att_var.reference_position_y = _current_position_y;
+						_juan_att_var.reference_position_z = _current_position_z;
+
+						//
+						_juan_att_var.estimated_position_x = _current_position_x;
+						_juan_att_var.estimated_position_y = _current_position_y;
+						_juan_att_var.estimated_position_z = _current_position_z;
+
+						_juan_att_var.estimated_velocity_x = _local_pos.vx;
+						_juan_att_var.estimated_velocity_y = _local_pos.vy;
+						_juan_att_var.estimated_velocity_z = _local_pos.vz;
+
+					}
+
+
+
+
+
+					_juan_att_var.heading_0 = _initial_heading;
 
 
 					_juan_attitude_variables_pub.publish(_juan_att_var);
@@ -1547,7 +1609,7 @@ void FixedwingAttitudeControl::JUAN_position_control()
 
 
 
-	// Assigned measured position and velocity
+	// Assign measured position and velocity
 	_local_pos_sub.update(&_local_pos);
 	float _pos_x_est = _local_pos.x;
 	float _pos_y_est = _local_pos.y;
@@ -1559,7 +1621,7 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// Call JUAN Maneuver generator. This assigns a position setpoint.
 
 	// NOTE!!!!!!!!!!! Check Qground disarm parameters!!!!!!
-	 JUAN_reference_generator(1);
+	 JUAN_reference_generator(2);
 
 	// Control law
 	float _error_pos_x = _pos_x_ref-_pos_x_est;
@@ -1577,11 +1639,11 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// Nose vector
 	float Fv1 = 1.0f*0.8f*0.8f*(1.3f*KdX * _error_vel_x + KpX * _error_pos_x + 0.5f*KiX * _error_x_int);
 	float Fv2 = 1.0f*0.8f*0.8f*(1.3f*KdY * _error_vel_y + KpY * _error_pos_y + 0.5f*KiY * _error_y_int);
-	float Fv3 = 1.0f*0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _error_pos_z + 0.3f*KiZ * _error_z_int) - 0.4f*_gravity_const;
+	float Fv3 = 1.0f*0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _error_pos_z + 0.3f*KiZ * _error_z_int) - 0.2f*_gravity_const;
 	float _norm_F = sqrtf(Fv1*Fv1+Fv2*Fv2+Fv3*Fv3);
-	float fv1 = Fv1/_norm_F;
-	float fv2 = Fv2/_norm_F;
-	float fv3 = Fv3/_norm_F;
+	fv1 = Fv1/_norm_F;
+	fv2 = Fv2/_norm_F;
+	fv3 = Fv3/_norm_F;
 	// Thrust magnitude (N)
   ThrustN = _mass_const*_norm_F;
 	// Non-normalized wing vector
@@ -1765,7 +1827,7 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 	// if (time_elapsed <= time_stage1)
 	// {
 			float t_man = _time_elapsed;
-			float Vel_track1 = 10.0f;
+			float Vel_track1 = 6.0f;
 	    _vel_x_ref = Vel_track1*cosf(_initial_heading);
 	    _vel_y_ref = Vel_track1*sinf(_initial_heading);
 	    _vel_z_ref = 0.0f;
@@ -1778,7 +1840,7 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 	else if (_maneuver_type == 2)
 	{
 		float t_man = _time_elapsed;
-		float V_i = 5.0f;
+		float V_i = 8.0f;
 		float t_init = 2.0;
 		float t_stop = 2.0f;
 		float a_slow = -V_i/t_stop;

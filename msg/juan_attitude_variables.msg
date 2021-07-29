@@ -9,6 +9,7 @@ float32[3] ctr_defl          # deflections (degrees?)
 float32[3] pwm_out_ctr          # PWM command
 float32[9] cbi_rows          # Cbi rows first
 float32[9] cri_rows          # Cri rows first
+float32[3] virtual_force     # f
 
 float32 motor_rpm           #motor commanded rpm
 
@@ -53,3 +54,4 @@ float32 true_airspeed # true airspeed tests
 float32 indicated_airspeed #indicated airspeed test
 float32 j_advance #advance ratio
 float32 omega_rpm #previous omega
+float32 heading_0 #initial heading upon switch to acro
