@@ -37,15 +37,29 @@ float32 reference_position_x # north reference
 float32 reference_position_y # east reference
 float32 reference_position_z # down reference
 
+float32 reference_velocity_x # north reference
+float32 reference_velocity_y # east reference
+float32 reference_velocity_z # down reference
+
+float32 reference_acceleration_x # north reference
+float32 reference_acceleration_y # east reference
+
 float32 estimated_position_x # north estimated
 float32 estimated_position_y # east estimated
 float32 estimated_position_z # down estimated
+
+#Feedforward
+float32 estimated_position_ff_x # north estimated
+float32 estimated_position_ff_y # east estimated
+#No Feedforward
+float32 estimated_position_nff_x # north estimated
+float32 estimated_position_nff_y # east estimated
 
 float32 estimated_velocity_x # north vel estimated
 float32 estimated_velocity_y # east vel estimated
 float32 estimated_velocity_z # down vel estimated
 
-
+float32 roll_comm
 
 float32 control_status # singularity management
 
@@ -55,7 +69,10 @@ float32 j_advance #advance ratio
 float32 omega_rpm #previous omega
 
 float32 crab_angle_ff #Angle of FF crab rotation matrix (R_wind)
+float32 crab_angle_ff_alt #Angle of FF crab rotation alternate
 bool feedforward_on #true if ff is on
+
+uint8 flight_mode_granular
 
 float32[9] r_wind_rows #Rows of R_wind_mtx
 float32[9] c_ri_pre_ff
@@ -65,3 +82,5 @@ float32 v_tild_e #Relative wind east E
 
 float32 v_n #Ground speed north N
 float32 v_e #Ground speed east E
+
+float32 path_rel_err #Path reletive error (Jackson's modes)

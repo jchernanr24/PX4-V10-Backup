@@ -231,15 +231,22 @@ private:
 
 	float t_last_vertex{0.0f};
 
+	float _acc_x_ref{0.0f};
+	float _acc_y_ref{0.0f};
+
 	float _pos_x_last_vtx{0.0f}; //Positions of last vertex reletive to _pos_init
 	float _pos_y_last_vtx{0.0f};
 	int turnCount{0}; //Number of turns of the box performed
 	bool completeFlag = false; //flag showing that the desired path is complete
 	bool exitMsgSent = false;
+	float t_circ = 0.0f;
+	float _pos_x_exit = 0.0f;
+	float _pos_y_exit = 0.0f;
 	matrix::Dcmf R_wind; //Feedforward rotation
 
 
 	bool feedforward_flag = false; //If true wind feedforward on position is enabled
+	bool longTurn = true;
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::FW_ACRO_X_MAX>) _param_fw_acro_x_max,
