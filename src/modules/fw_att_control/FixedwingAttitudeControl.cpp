@@ -599,7 +599,7 @@ void FixedwingAttitudeControl::Run()
 				_previous_yaw = euler_angles.psi();
 				longTurn = true; //start off with a long turn
 				// _initial_heading = _previous_yaw;
-				_initial_heading = atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
+				_initial_heading = PI_f/2.0f;// * atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
 				_initial_vxy = sqrtf(_local_pos.vy * _local_pos.vy + _local_pos.vx * _local_pos.vx);
 				_previous_time = hrt_absolute_time() / 1e6;
 				_time_elapsed = 0.0f;
@@ -1451,9 +1451,9 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// float k_roll_i = 0.0f*0.01f;
 
 	// Added roll gains SITL!
-	float k_roll_p = 4.32f;
+	float k_roll_p = 0.2f* 4.32f;
 	float k_roll_y = 0.2f;
-	// float max_roll = 30.0f;
+	float max_roll = 40.0f;
 
 
 
@@ -1518,11 +1518,13 @@ void FixedwingAttitudeControl::JUAN_position_control()
 			belly_n_old = proj1;
 			belly_e_old = proj2;
 
-				float psi = atan2f(_local_pos.y, _local_pos.x);
-				float Ye = sinf(psi)*(_pos_x_ref - _local_pos.x) + cosf(psi)*(_pos_y_ref - _local_pos.y);
+				// float psi = atan2f(_local_pos.y, _local_pos.x);
+				// float Ye = -sinf(psi)*(_pos_x_ref - _local_pos.x) + cosf(psi)*(_pos_y_ref - _local_pos.y);
+				float psi = atan2f(_local_pos.x, _local_pos.y);
+				float Ye = -sinf(psi)*(_pos_y_ref - _local_pos.y) + cosf(psi)*(_pos_x_ref - _local_pos.x);
 				float psi_c = k_roll_y * Ye;
 
-				PX4_INFO("psi: %f , psi_c: %f, Ye: %f", (double)psi, (double)psi_c, (double)Ye);
+				// PX4_INFO("psi: %f , psi_c: %f, Ye: %f", (double)psi, (double)psi_c, (double)Ye);
 
 				/* ----- UNWRAP ----- */
 				if (psi_c < -PI_f)
@@ -1534,8 +1536,7 @@ void FixedwingAttitudeControl::JUAN_position_control()
 					psi_c = psi_c - 2.0f*PI_f;
 				}
 
-				float max_roll = 20.0f; //from matlab
-				float roll_com = (0.5f*k_roll_p*psi_c);
+				float roll_com = (-0.5f*k_roll_p*psi_c);
 				if (roll_com >= 0.0f)
 				{
 					if (roll_com > max_roll*PI_f/180.0f)
