@@ -243,6 +243,7 @@ private:
 	float _pos_x_exit = 0.0f;
 	float _pos_y_exit = 0.0f;
 	matrix::Dcmf R_wind; //Feedforward rotation
+	matrix::Dcmf R_roll; //Roll matrix
 
 
 	bool feedforward_flag = false; //If true wind feedforward on position is enabled

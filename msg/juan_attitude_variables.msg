@@ -76,6 +76,10 @@ uint8 flight_mode_granular
 
 float32[9] r_wind_rows #Rows of R_wind_mtx
 float32[9] c_ri_pre_ff
+float32[9] r_roll_rows
+float32 psi_c
+float32 psi_c_b4
+float32 psi
 
 float32 v_tild_n #Relative wind north N
 float32 v_tild_e #Relative wind east E

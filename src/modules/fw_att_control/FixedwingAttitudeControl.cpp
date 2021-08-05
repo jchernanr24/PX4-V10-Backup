@@ -599,7 +599,8 @@ void FixedwingAttitudeControl::Run()
 				_previous_yaw = euler_angles.psi();
 				longTurn = true; //start off with a long turn
 				// _initial_heading = _previous_yaw;
-				_initial_heading = PI_f/2.0f;// * atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
+				_initial_heading = PI_f/2.0f;// *
+				_initial_heading = atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
 				_initial_vxy = sqrtf(_local_pos.vy * _local_pos.vy + _local_pos.vx * _local_pos.vx);
 				_previous_time = hrt_absolute_time() / 1e6;
 				_time_elapsed = 0.0f;
@@ -851,7 +852,7 @@ void FixedwingAttitudeControl::Run()
 
 				} else {
 					JUAN_position_control();
-					C_ri = C_ri_pos.transpose();
+					C_ri = R_roll * C_ri_pos.transpose();
 
 					_juan_att_var.c_ri_pre_ff[0] =  C_ri(0, 0);
 					_juan_att_var.c_ri_pre_ff[1] =  C_ri(0, 1);
@@ -985,13 +986,13 @@ void FixedwingAttitudeControl::Run()
 				// float Kai3 = 0.0f * 0.8f * 0.6776f;
 				/*..................................................................*/
 				/*................Attitude controller gains SITL!.........................*/
-				float Kad1 = 0.0706f / (0.7f);
-				float Kad2 = 0.6376f / (0.8f);
-				float Kad3 = 0.7736f / (0.8f);
+				float Kad1 = 0.22f * 0.0706f / (0.7f);
+				float Kad2 = 0.22f * 0.6376f / (0.8f);
+				float Kad3 = 0.22f * 0.7736f / (0.8f);
 
-				float Kap1 = 0.7099f / (0.8f);
-				float Kap2 = 0.35f * 25.5359f / (1.0f);
-				float Kap3 = 0.35f * 38.7187f / (0.8f);
+				float Kap1 = 0.22f * 0.7099f / (0.8f);
+				float Kap2 = 0.22f * 0.35f * 25.5359f / (1.0f);
+				float Kap3 = 0.22f * 0.35f * 38.7187f / (0.8f);
 
 				float Kai1 = 0.0f * 0.8f * 0.1656f;
 				float Kai2 = 0.0f * 0.8f * 1.022f;
@@ -1451,9 +1452,9 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// float k_roll_i = 0.0f*0.01f;
 
 	// Added roll gains SITL!
-	float k_roll_p = 0.2f* 4.32f;
+	float k_roll_p = 0.3f * 4.32f;//0.45f*4.32f;
 	float k_roll_y = 0.2f;
-	float max_roll = 40.0f;
+	float max_roll = 20.0f;
 
 
 
@@ -1518,13 +1519,16 @@ void FixedwingAttitudeControl::JUAN_position_control()
 			belly_n_old = proj1;
 			belly_e_old = proj2;
 
-				// float psi = atan2f(_local_pos.y, _local_pos.x);
+				// float psi = atan2f(_local_pos.vy, _local_pos.vx);
 				// float Ye = -sinf(psi)*(_pos_x_ref - _local_pos.x) + cosf(psi)*(_pos_y_ref - _local_pos.y);
-				float psi = atan2f(_local_pos.x, _local_pos.y);
+				float psi = atan2f(_local_pos.vx, _local_pos.vy);
+				_juan_att_var.psi = psi;
 				float Ye = -sinf(psi)*(_pos_y_ref - _local_pos.y) + cosf(psi)*(_pos_x_ref - _local_pos.x);
 				float psi_c = k_roll_y * Ye;
 
 				// PX4_INFO("psi: %f , psi_c: %f, Ye: %f", (double)psi, (double)psi_c, (double)Ye);
+
+				_juan_att_var.psi_c_b4 = psi_c;
 
 				/* ----- UNWRAP ----- */
 				if (psi_c < -PI_f)
@@ -1536,7 +1540,9 @@ void FixedwingAttitudeControl::JUAN_position_control()
 					psi_c = psi_c - 2.0f*PI_f;
 				}
 
-				float roll_com = (-0.5f*k_roll_p*psi_c);
+				_juan_att_var.psi_c = psi_c;
+
+				float roll_com = (0.5f*k_roll_p*psi_c);
 				if (roll_com >= 0.0f)
 				{
 					if (roll_com > max_roll*PI_f/180.0f)
@@ -1552,21 +1558,55 @@ void FixedwingAttitudeControl::JUAN_position_control()
 				}
 				_juan_att_var.roll_comm = roll_com;
 
+				/* ---- Cri ---- */
+
 				float m_ba11 = fv1;
 				float m_ba12 = fv2;
 				float m_ba13 = fv3;
 
-				float m_ba21 =  wv1*cosf(roll_com) + proj1*sinf(roll_com);
-				float m_ba22 =  wv2*cosf(roll_com) + proj2*sinf(roll_com);
-				float m_ba23 =  wv3*cosf(roll_com) + proj3*sinf(roll_com);
+				float m_ba21 =  wv1;
+				float m_ba22 =  wv2;
+				float m_ba23 =  wv3;
 
-				float m_ba31 =  -wv1*sinf(roll_com) + proj1*cosf(roll_com);
-				float m_ba32 =  -wv2*sinf(roll_com) + proj2*cosf(roll_com);
-				float m_ba33 =  -wv3*sinf(roll_com) + proj3*cosf(roll_com);
+				float m_ba31 = proj1;
+				float m_ba32 = proj2;
+				float m_ba33 = proj3;
 
 				float bldr_array_cri[9] = {m_ba11,m_ba21,m_ba31,m_ba12,m_ba22,m_ba32,m_ba13,m_ba23,m_ba33};
 				matrix::SquareMatrix<float, 3> Bldr_Matrix_cri(bldr_array_cri);
 				matrix::Dcmf C_ref_steady (Bldr_Matrix_cri);
+
+				/* ---- Roll matrix ---- */
+
+				m_ba11 = 1.0f;
+				m_ba12 = 0.0f;
+				m_ba13 = 0.0f;
+
+				m_ba21 =  0.0f;
+				m_ba22 =  cosf(roll_com);
+				m_ba23 =  sinf(roll_com);
+
+				m_ba31 =  0.0f;
+				m_ba32 =  -sin(roll_com);
+				m_ba33 =  cosf(roll_com);
+
+				float bldr_array_cri_2[9] = {m_ba11,m_ba21,m_ba31,m_ba12,m_ba22,m_ba32,m_ba13,m_ba23,m_ba33};
+				matrix::SquareMatrix<float, 3> Bldr_Matrix_cri_2(bldr_array_cri_2);
+				matrix::Dcmf R_roll_temp(Bldr_Matrix_cri_2);
+				R_roll = R_roll_temp;//.transpose(); //comes out flipped
+
+
+				_juan_att_var.r_roll_rows[0] =  R_roll(0,0);
+				_juan_att_var.r_roll_rows[1] =  R_roll(0,1);
+				_juan_att_var.r_roll_rows[2] =  R_roll(0,2);
+				_juan_att_var.r_roll_rows[3] =  R_roll(1,0);
+				_juan_att_var.r_roll_rows[4] =  R_roll(1,1);
+				_juan_att_var.r_roll_rows[5] =  R_roll(1,2);
+				_juan_att_var.r_roll_rows[6] =  R_roll(2,0);
+				_juan_att_var.r_roll_rows[7] =  R_roll(2,1);
+				_juan_att_var.r_roll_rows[8] =  R_roll(2,2);
+
+
 				C_ri_pos = C_ref_steady;
 	}
 	else
@@ -2002,11 +2042,11 @@ void FixedwingAttitudeControl::wind_ff_rot_update()
 {
 
 	/* ---- Wind vector ---- */
-	float v_wind_N = _wind.windspeed_north;
-	float v_wind_E = _wind.windspeed_east;
+	// float v_wind_N = _wind.windspeed_north;
+	// float v_wind_E = _wind.windspeed_east;
 	// _local_pos_sub.update(&_local_pos);
-	// float v_wind_N = -5.0f;
-	// float v_wind_E = 0.0f;
+	float v_wind_N = -5.0f;
+	float v_wind_E = 0.0f;
 
 	/* ---- Velocity vector ---- */
 
