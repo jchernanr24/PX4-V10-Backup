@@ -600,7 +600,7 @@ void FixedwingAttitudeControl::Run()
 				longTurn = true; //start off with a long turn
 				// _initial_heading = _previous_yaw;
 				_initial_heading = PI_f/2.0f;// *
-				_initial_heading = atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
+				// _initial_heading = atan2f(_local_pos.vy, _local_pos.vx); //Use velocity direction instead
 				_initial_vxy = sqrtf(_local_pos.vy * _local_pos.vy + _local_pos.vx * _local_pos.vx);
 				_previous_time = hrt_absolute_time() / 1e6;
 				_time_elapsed = 0.0f;
@@ -986,13 +986,13 @@ void FixedwingAttitudeControl::Run()
 				// float Kai3 = 0.0f * 0.8f * 0.6776f;
 				/*..................................................................*/
 				/*................Attitude controller gains SITL!.........................*/
-				float Kad1 = 0.22f * 0.0706f / (0.7f);
-				float Kad2 = 0.22f * 0.6376f / (0.8f);
-				float Kad3 = 0.22f * 0.7736f / (0.8f);
+				float Kad1 = 0.15f * 4.54f * 0.22f * 0.0706f / (0.7f);
+				float Kad2 = 0.17f *4.54f * 0.22f * 0.6376f / (0.8f);
+				float Kad3 = 0.2f *4.54f * 0.22f * 0.7736f / (0.8f);
 
-				float Kap1 = 0.22f * 0.7099f / (0.8f);
-				float Kap2 = 0.22f * 0.35f * 25.5359f / (1.0f);
-				float Kap3 = 0.22f * 0.35f * 38.7187f / (0.8f);
+				float Kap1 = 0.27f *4.54f * 0.22f * 0.7099f / (0.8f);
+				float Kap2 = 0.22f *4.54f * 0.22f * 0.35f * 25.5359f / (1.0f);
+				float Kap3 = 0.3f *4.54f * 0.22f * 0.35f * 38.7187f / (0.8f);
 
 				float Kai1 = 0.0f * 0.8f * 0.1656f;
 				float Kai2 = 0.0f * 0.8f * 1.022f;
@@ -1430,11 +1430,11 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// float KiZ = 0.25f*0.0004f;
 
 	/* --- SITL --- */
-	float KpX = 0.54f / ( (1.0f*0.8f*0.8f) ) ;
-	float KpY = 0.54f / ( (1.0f*0.8f*0.8f) ) ;
+	float KpX = 2.7f * 2.2f/2.2f * 0.54f / ( (1.0f*0.8f*0.8f) ) ;
+	float KpY = 2.7f * 2.2f/2.2f  * 0.54f / ( (1.0f*0.8f*0.8f) ) ;
 	float KpZ = 0.54f / ( (1.0f*0.8f*0.8f) * 1.2f) ;
-	float KdX = 0.336f / (1.0f*0.8f*0.8f*(1.3f));
-	float KdY = 0.336f / (1.0f*0.8f*0.8f*(1.3f));
+	float KdX = 2.2f * 0.336f / (1.0f*0.8f*0.8f*(1.3f));
+	float KdY = 2.2f * 0.336f / (1.0f*0.8f*0.8f*(1.3f));
 	float KdZ = 0.168f / (1.0f*0.8f*0.8f*(1.2f));
 	float KiX = 0.25f*0.0008f;
 	float KiY = 0.25f*0.0008f;
@@ -1452,9 +1452,9 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// float k_roll_i = 0.0f*0.01f;
 
 	// Added roll gains SITL!
-	float k_roll_p = 0.3f * 4.32f;//0.45f*4.32f;
+	float k_roll_p = 4.32f;//0.45f*4.32f;
 	float k_roll_y = 0.2f;
-	float max_roll = 20.0f;
+	float max_roll = 40.0f;
 
 
 
@@ -1814,11 +1814,11 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 	else if(_maneuver_type == 4) //Straight path, turn wff on and off
 	{
 		float t_man = _time_elapsed;
-		// float Vel_track1 = 10.0f;
-		float Vel_track1 = _initial_vxy;
+		float Vel_track1 = 10.0f;
+		// float Vel_track1 = _initial_vxy;
 		float t_switch_ff = 40.0f;
 
-		if(t_man < t_switch_ff){ feedforward_flag = true; }
+		if(t_man < t_switch_ff){ feedforward_flag = false; }
 		else { feedforward_flag = false; if(!exitMsgSent){{PX4_INFO("Switching to no-feedforward"); exitMsgSent = true;}}}
 
 		_vel_x_ref = Vel_track1*cosf(_initial_heading);
@@ -2042,11 +2042,11 @@ void FixedwingAttitudeControl::wind_ff_rot_update()
 {
 
 	/* ---- Wind vector ---- */
-	// float v_wind_N = _wind.windspeed_north;
-	// float v_wind_E = _wind.windspeed_east;
+	float v_wind_N = _wind.windspeed_north;
+	float v_wind_E = _wind.windspeed_east;
 	// _local_pos_sub.update(&_local_pos);
-	float v_wind_N = -5.0f;
-	float v_wind_E = 0.0f;
+	// float v_wind_N = 7.0f;
+	// float v_wind_E = 0.0f;
 
 	/* ---- Velocity vector ---- */
 
