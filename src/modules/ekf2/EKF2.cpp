@@ -194,17 +194,18 @@ bool EKF2::multi_init(int imu, int mag)
 	_estimator_visual_odometry_aligned_pub.advertised();
 	_yaw_est_pub.advertise();
 
-	_vehicle_imu_sub.ChangeInstance(imu);
-	_magnetometer_sub.ChangeInstance(mag);
+	bool changed_instance = _vehicle_imu_sub.ChangeInstance(imu) && _magnetometer_sub.ChangeInstance(mag);
 
 	const int status_instance = _estimator_states_pub.get_instance();
 
-	if ((status_instance >= 0)
+	if ((status_instance >= 0) && changed_instance
 	    && (_attitude_pub.get_instance() == status_instance)
 	    && (_local_position_pub.get_instance() == status_instance)
 	    && (_global_position_pub.get_instance() == status_instance)) {
 
 		_instance = status_instance;
+
+		ScheduleNow();
 		return true;
 	}
 
@@ -1741,7 +1742,8 @@ int EKF2::task_spawn(int argc, char *argv[])
 
 		while ((multi_instances_allocated < multi_instances)
 		       && (vehicle_status_sub.get().arming_state != vehicle_status_s::ARMING_STATE_ARMED)
-		       && (hrt_elapsed_time(&time_started) < 30_s)) {
+		       && ((hrt_elapsed_time(&time_started) < 30_s)
+			   || (vehicle_status_sub.get().hil_state == vehicle_status_s::HIL_STATE_ON))) {
 
 			vehicle_status_sub.update();
 
@@ -1766,16 +1768,21 @@ int EKF2::task_spawn(int argc, char *argv[])
 
 								if ((actual_instance >= 0) && (_objects[actual_instance].load() == nullptr)) {
 									_objects[actual_instance].store(ekf2_inst);
-									ekf2_inst->ScheduleNow();
 									success = true;
 									multi_instances_allocated++;
 									ekf2_instance_created[imu][mag] = true;
+
+									if (actual_instance == 0) {
+										// force selector to run immediately if first instance started
+										_ekf2_selector.load()->ScheduleNow();
+									}
 
 									PX4_INFO("starting instance %d, IMU:%d (%d), MAG:%d (%d)", actual_instance,
 										 imu, vehicle_imu_sub.get().accel_device_id,
 										 mag, vehicle_mag_sub.get().device_id);
 
-									_ekf2_selector.load()->ScheduleNow();
+									// sleep briefly before starting more instances
+									px4_usleep(10000);
 
 								} else {
 									PX4_ERR("instance numbering problem instance: %d", actual_instance);

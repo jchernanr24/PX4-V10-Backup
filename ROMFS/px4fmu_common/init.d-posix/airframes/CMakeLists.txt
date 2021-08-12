@@ -32,6 +32,7 @@
 ############################################################################
 
 px4_add_romfs_files(
+	1009_mcfoamy
 	10016_iris
 	10017_iris_ctrlalloc
 	10018_iris_foggy_lidar
@@ -60,7 +61,8 @@ px4_add_romfs_files(
 	1033_plane_lidar
 	1033_rascal
 	1034_rascal-electric
-	1035_techpod
+	# 1035_techpod
+	1035_mcfoamy
 	1036_malolo
 	1040_standard_vtol
 	1041_tailsitter

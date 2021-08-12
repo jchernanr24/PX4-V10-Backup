@@ -502,7 +502,7 @@ param_get(param_t param, void *val)
 	}
 
 	if (!params_active[param]) {
-		PX4_WARN("get: param %d (%s) not active", param, param_name(param));
+		PX4_DEBUG("get: param %d (%s) not active", param, param_name(param));
 	}
 
 	int result = PX4_ERROR;
@@ -625,7 +625,6 @@ param_get_system_default_value(param_t param, void *default_val)
 	}
 
 	int ret = PX4_OK;
-	param_lock_reader();
 
 	switch (param_type(param)) {
 	case PARAM_TYPE_INT32:
@@ -641,7 +640,6 @@ param_get_system_default_value(param_t param, void *default_val)
 		break;
 	}
 
-	param_unlock_reader();
 	return ret;
 }
 
@@ -1131,32 +1129,30 @@ int param_save_default()
 		return res;
 	}
 
-	/* write parameters to temp file */
-	int fd = PARAM_OPEN(filename, O_WRONLY | O_CREAT, PX4_O_MODE_666);
-
-	if (fd < 0) {
-		PX4_ERR("failed to open param file: %s", filename);
-
-		return PX4_ERROR;
-	}
-
 	int attempts = 5;
 
 	while (res != OK && attempts > 0) {
-		res = param_export(fd, false, nullptr);
-		attempts--;
+		// write parameters to file
+		int fd = PARAM_OPEN(filename, O_WRONLY | O_CREAT, PX4_O_MODE_666);
 
-		if (res != PX4_OK) {
-			PX4_ERR("param_export failed, retrying %d", attempts);
-			lseek(fd, 0, SEEK_SET); // jump back to the beginning of the file
+		if (fd > -1) {
+			res = param_export(fd, false, nullptr);
+			PARAM_CLOSE(fd);
+
+			if (res != PX4_OK) {
+				PX4_ERR("param_export failed, retrying %d", attempts);
+			}
+
+		} else {
+			PX4_ERR("failed to open param file %s, retrying %d", filename, attempts);
 		}
+
+		attempts--;
 	}
 
 	if (res != OK) {
 		PX4_ERR("failed to write parameters to file: %s", filename);
 	}
-
-	PARAM_CLOSE(fd);
 
 	return res;
 }
@@ -1280,12 +1276,11 @@ param_export(int fd, bool only_unsaved, param_filter_func filter)
 
 		/* append the appropriate BSON type object */
 		switch (param_type(s->param)) {
-
 		case PARAM_TYPE_INT32: {
 				const int32_t i = s->val.i;
 				PX4_DEBUG("exporting: %s (%d) size: %lu val: %d", name, s->param, (long unsigned int)size, i);
 
-				if (bson_encoder_append_int(&encoder, name, i)) {
+				if (bson_encoder_append_int(&encoder, name, i) != 0) {
 					PX4_ERR("BSON append failed for '%s'", name);
 					goto out;
 				}
@@ -1296,7 +1291,7 @@ param_export(int fd, bool only_unsaved, param_filter_func filter)
 				const double f = (double)s->val.f;
 				PX4_DEBUG("exporting: %s (%d) size: %lu val: %.3f", name, s->param, (long unsigned int)size, (double)f);
 
-				if (bson_encoder_append_double(&encoder, name, f)) {
+				if (bson_encoder_append_double(&encoder, name, f) != 0) {
 					PX4_ERR("BSON append failed for '%s'", name);
 					goto out;
 				}
@@ -1304,8 +1299,7 @@ param_export(int fd, bool only_unsaved, param_filter_func filter)
 			break;
 
 		default:
-			PX4_ERR("unrecognized parameter type");
-			goto out;
+			PX4_ERR("%s unrecognized parameter type %d, skipping export", name, param_type(s->param));
 		}
 	}
 
@@ -1315,7 +1309,8 @@ out:
 
 	if (result == 0) {
 		if (bson_encoder_fini(&encoder) != PX4_OK) {
-			PX4_ERR("bson encoder finish failed");
+			PX4_ERR("BSON encoder finialize failed");
+			result = -1;
 		}
 	}
 
@@ -1420,23 +1415,36 @@ out:
 static int
 param_import_internal(int fd, bool mark_saved)
 {
-	bson_decoder_s decoder;
-	param_import_state state;
-	int result = -1;
+	for (int attempt = 1; attempt < 5; attempt++) {
+		bson_decoder_s decoder;
+		param_import_state state;
 
-	if (bson_decoder_init_file(&decoder, fd, param_import_callback, &state)) {
-		PX4_ERR("decoder init failed");
-		return PX4_ERROR;
+		if (bson_decoder_init_file(&decoder, fd, param_import_callback, &state) == 0) {
+			state.mark_saved = mark_saved;
+
+			int result = -1;
+
+			do {
+				result = bson_decoder_next(&decoder);
+
+			} while (result > 0);
+
+			if (result == 0) {
+				PX4_INFO("BSON document size %d bytes, decoded %d bytes", decoder.total_document_size, decoder.total_decoded_size);
+				return 0;
+
+			} else {
+				PX4_ERR("param import failed (%d) attempt %d, retrying", result, attempt);
+			}
+
+		} else {
+			PX4_ERR("param import bson decoder init failed attempt %d, retrying", attempt);
+		}
+
+		lseek(fd, 0, SEEK_SET);
 	}
 
-	state.mark_saved = mark_saved;
-
-	do {
-		result = bson_decoder_next(&decoder);
-
-	} while (result > 0);
-
-	return result;
+	return -1;
 }
 
 int
