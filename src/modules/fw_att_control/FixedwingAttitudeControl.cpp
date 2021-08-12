@@ -941,7 +941,7 @@ void FixedwingAttitudeControl::Run()
 					float _manual_yaw = _yaw_test_profile;
 					float _manual_roll = _roll_test_profile;
 					float _manual_pitch = _pitch_test_profile;
-					float _heading_rate_coordinated = -1.0f;
+
 					float _ground_velocity_corrected = -1.0f;
 					/*.................. End Loop profile ..............................*/
 
