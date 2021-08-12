@@ -853,6 +853,7 @@ void FixedwingAttitudeControl::Run()
 				} else {
 					JUAN_position_control();
 					C_ri = R_roll * C_ri_pos.transpose();
+					// C_ri = C_ri_pos.transpose();
 
 					_juan_att_var.c_ri_pre_ff[0] =  C_ri(0, 0);
 					_juan_att_var.c_ri_pre_ff[1] =  C_ri(0, 1);
@@ -870,6 +871,7 @@ void FixedwingAttitudeControl::Run()
 						// matrix::Dcmf temp_C_ri = C_ri * R_wind; //avoid any weirdness like in Eigen
 						// C_ri = temp_C_ri;
 						C_ri = C_ri * R_wind;
+						ThrustN += T_add;
 					}
 
 					_juan_att_var.feedforward_on = feedforward_flag;
@@ -1080,7 +1082,7 @@ void FixedwingAttitudeControl::Run()
 				/* .........................Control allocation......................*/
 				// float airspeed2 = get_airspeed_and_update_scaling();
 				// float Vs = airspeed2;
-				float Vs = 6.0f;
+				float Vs = 5.0f;
 
 				float AilDef = 0.7f * tau_1 / (.5f * ro * powf(Vs, 2.0f) * S_area * b_span * Cl_delta_a); //Aileron Deflection (deg)
 				float ElevDef = 0.8f * tau_2 / (.5f * ro * powf(Vs, 2.0f) * S_area * c_bar * Cm_delta_e); //Elevator Deflection (deg)
@@ -1430,11 +1432,11 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	// float KiZ = 0.25f*0.0004f;
 
 	/* --- SITL --- */
-	float KpX = 2.7f * 2.2f/2.2f * 0.54f / ( (1.0f*0.8f*0.8f) ) ;
-	float KpY = 2.7f * 2.2f/2.2f  * 0.54f / ( (1.0f*0.8f*0.8f) ) ;
-	float KpZ = 0.54f / ( (1.0f*0.8f*0.8f) * 1.2f) ;
-	float KdX = 2.2f * 0.336f / (1.0f*0.8f*0.8f*(1.3f));
-	float KdY = 2.2f * 0.336f / (1.0f*0.8f*0.8f*(1.3f));
+	float KpX = 1.25f * 0.54f / ( (1.0f*0.8f*0.8f) ) ;
+	float KpY = 1.25f *  0.54f / ( (1.0f*0.8f*0.8f) ) ;
+	float KpZ = 1.25f * 0.54f / ( (1.0f*0.8f*0.8f) * 1.2f) ;
+	float KdX = 0.336f / (1.0f*0.8f*0.8f*(1.3f));
+	float KdY = 0.336f / (1.0f*0.8f*0.8f*(1.3f));
 	float KdZ = 0.168f / (1.0f*0.8f*0.8f*(1.2f));
 	float KiX = 0.25f*0.0008f;
 	float KiY = 0.25f*0.0008f;
@@ -1490,8 +1492,8 @@ void FixedwingAttitudeControl::JUAN_position_control()
 	float Fv2 = 1.0f*0.8f*0.8f*(_acc_y_ref + 1.3f*KdY * _error_vel_y + KpY * _error_pos_y + 0.5f*KiY * _error_y_int);
 	float Fv3 = 1.0f*0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _error_pos_z + 0.3f*KiZ * _error_z_int) - 0.4f*_gravity_const;
 	float _norm_F = sqrtf(Fv1*Fv1+Fv2*Fv2+Fv3*Fv3);
-	float fv1 = Fv1/_norm_F;
-	float fv2 = Fv2/_norm_F;
+	fv1 = Fv1/_norm_F;
+	fv2 = Fv2/_norm_F;
 	float fv3 = Fv3/_norm_F;
 	// Thrust magnitude (N)
 	ThrustN = _mass_const*_norm_F;
@@ -1519,11 +1521,14 @@ void FixedwingAttitudeControl::JUAN_position_control()
 			belly_n_old = proj1;
 			belly_e_old = proj2;
 
-				// float psi = atan2f(_local_pos.vy, _local_pos.vx);
-				// float Ye = -sinf(psi)*(_pos_x_ref - _local_pos.x) + cosf(psi)*(_pos_y_ref - _local_pos.y);
-				float psi = atan2f(_local_pos.vx, _local_pos.vy);
+				// float psi = atan2f(_local_pos.vy, _local_pos.vx); old
+				float psi = atan2f(_local_pos.vx, _local_pos.vy); //new
+				// float psi = -_local_pos.heading + PI_f/2.0f;
+
+				// float Ye = -sinf(psi)*(_pos_x_ref - _local_pos.x) + cosf(psi)*(_pos_y_ref - _local_pos.y); old
+
 				_juan_att_var.psi = psi;
-				float Ye = -sinf(psi)*(_pos_y_ref - _local_pos.y) + cosf(psi)*(_pos_x_ref - _local_pos.x);
+				float Ye = -sinf(psi)*(_pos_y_ref - _local_pos.y) + cosf(psi)*(_pos_x_ref - _local_pos.x); //new
 				float psi_c = k_roll_y * Ye;
 
 				// PX4_INFO("psi: %f , psi_c: %f, Ye: %f", (double)psi, (double)psi_c, (double)Ye);
@@ -1556,6 +1561,7 @@ void FixedwingAttitudeControl::JUAN_position_control()
 						roll_com = -max_roll*PI_f/180;
 					}
 				}
+				// roll_com = 0.0f;
 				_juan_att_var.roll_comm = roll_com;
 
 				/* ---- Cri ---- */
@@ -1918,7 +1924,7 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 	{
 		float V_n = _initial_vxy;
 		V_n = 10.0f;
-		float radius = 30.0f; //m
+		float radius = 10.0f; //m
 		float t_runup = 10.0f; //sec
 		float discrep = 0.0f; //m
 
@@ -1985,7 +1991,8 @@ void FixedwingAttitudeControl::JUAN_reference_generator(int _maneuver_type)
 				t_last = t_man;
 
 				if(abs(theta_i) > PI_f * maxRot){
-					feedforward_flag = false;
+					// feedforward_flag = false;
+					thrust_add_flag = false;
 					_juan_att_var.estimated_position_nff_x = _local_pos.x;
 					_juan_att_var.estimated_position_nff_y = _local_pos.y;
 					if(!exitMsgSent){PX4_INFO("FF off"); exitMsgSent=true;}
@@ -2041,6 +2048,9 @@ float FixedwingAttitudeControl::saturate(float value, float min, float max)
 void FixedwingAttitudeControl::wind_ff_rot_update()
 {
 
+	float KdX = 0.336f / (1.0f*0.8f*0.8f*(1.3f));
+	float KdY = 0.336f / (1.0f*0.8f*0.8f*(1.3f));
+
 	/* ---- Wind vector ---- */
 	float v_wind_N = _wind.windspeed_north;
 	float v_wind_E = _wind.windspeed_east;
@@ -2050,8 +2060,10 @@ void FixedwingAttitudeControl::wind_ff_rot_update()
 
 	/* ---- Velocity vector ---- */
 
-	float v_N = _local_pos.vx;
-	float v_E = _local_pos.vy;
+	// float v_N = _local_pos.vx;
+	// float v_E = _local_pos.vy;
+	float v_N = _vel_x_ref;
+	float v_E = _vel_y_ref;
 
 	float v_norm = sqrtf(v_N*v_N + v_E*v_E);
 
@@ -2112,4 +2124,18 @@ void FixedwingAttitudeControl::wind_ff_rot_update()
 
 	_juan_att_var.v_n = v_N;
 	_juan_att_var.v_e = v_E;
+
+	if(thrust_add_flag)
+	{
+		T_add =	(fv1 * KdX * (v_tild_N - v_N) + fv2 * KdY * (v_tild_E - v_E));
+
+		if(T_add > 0)
+		{
+			T_add *= 0.7f;
+		}
+		else if(T_add < 0)
+		{
+			T_add *= 0.7f;
+		}
+	}
 }

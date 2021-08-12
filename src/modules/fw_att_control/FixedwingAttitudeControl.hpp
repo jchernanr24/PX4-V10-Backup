@@ -233,6 +233,12 @@ private:
 
 	float _acc_x_ref{0.0f};
 	float _acc_y_ref{0.0f};
+	float fv1{0.0f};
+	float fv2{0.0f};
+
+	//Additional thrust
+	bool thrust_add_flag{true};
+	float T_add{0.0f};
 
 	float _pos_x_last_vtx{0.0f}; //Positions of last vertex reletive to _pos_init
 	float _pos_y_last_vtx{0.0f};
