@@ -798,7 +798,7 @@ void FixedwingAttitudeControl::Run()
 
 				_error_heading_int = 0.0f;
 
-				_JUAN_flight_mode = 1;
+				_JUAN_flight_mode = 0;
 
 				_previous_rpm = 900.0f;
 
@@ -1293,7 +1293,7 @@ void FixedwingAttitudeControl::Run()
 					_juan_att_var.pilot_pitch_com = _manual_pitch;
 					_juan_att_var.pilot_yaw_com = _manual_yaw;
 					_juan_att_var.ground_speed_attitude = _ground_velocity_corrected;
-					_juan_att_var.coordinate_yaw_rate = _heading_rate_coordinated;
+					// _juan_att_var.coordinate_yaw_rate = _heading_rate_coordinated;
 					_juan_att_var.attitude_error_function = att_err_function;
 
 
