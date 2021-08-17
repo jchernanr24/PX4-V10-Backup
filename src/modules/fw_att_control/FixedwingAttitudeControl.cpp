@@ -1769,7 +1769,7 @@ void FixedwingAttitudeControl::JUAN_mission_planner()
 		_thrust_hard_value = 1.0f;
 		if (fabsf(_pos_z_est)>30.0f){
 			_program_counter = 3;
-			JUAN_pose_initialize();
+			// JUAN_pose_initialize();
 		}
 	}
 	else
@@ -1809,27 +1809,27 @@ void FixedwingAttitudeControl::JUAN_logger()
 	// _juan_att_var.error_so3[2] = err_att_3;
 
 
-	_juan_att_var.ctr_defl[0] = _AilDef;
-	_juan_att_var.ctr_defl[1] = _ElevDef;
-	_juan_att_var.ctr_defl[2] = _RudDef;
-	_juan_att_var.normalized_throttle = _throttle_out;
+	// _juan_att_var.ctr_defl[0] = _AilDef;
+	// _juan_att_var.ctr_defl[1] = _ElevDef;
+	// _juan_att_var.ctr_defl[2] = _RudDef;
+	// _juan_att_var.normalized_throttle = _throttle_out;
 	//
 	// // _juan_att_var.pwm_out_ctr[0] = outputs_ail;
 	// // _juan_att_var.pwm_out_ctr[1] = outputs_ele;
 	// // _juan_att_var.pwm_out_ctr[2] = outputs_rud;
 
-	_juan_att_var.ground_speed_attitude = _ground_velocity_corrected;
-	_juan_att_var.coordinate_yaw_rate = _heading_rate_coordinated;
+	// _juan_att_var.ground_speed_attitude = _ground_velocity_corrected;
+	// _juan_att_var.coordinate_yaw_rate = _heading_rate_coordinated;
 	// _juan_att_var.attitude_error_function = att_err_function;
 	//
 	//
-	_juan_att_var.omega_ref[0] = _omega_reference_body(0);
-	_juan_att_var.omega_ref[1] = _omega_reference_body(1);
-	_juan_att_var.omega_ref[2] = _omega_reference_body(2);
-	//
-	_juan_att_var.omega_bod[0] = x_rate_body;
-	_juan_att_var.omega_bod[1] = y_rate_body;
-	_juan_att_var.omega_bod[2] = z_rate_body;
+	// _juan_att_var.omega_ref[0] = _omega_reference_body(0);
+	// _juan_att_var.omega_ref[1] = _omega_reference_body(1);
+	// _juan_att_var.omega_ref[2] = _omega_reference_body(2);
+	// //
+	// _juan_att_var.omega_bod[0] = x_rate_body;
+	// _juan_att_var.omega_bod[1] = y_rate_body;
+	// _juan_att_var.omega_bod[2] = z_rate_body;
 	//
 	_juan_att_var.cbi_rows[0] = C_bi(0,0);
 	_juan_att_var.cbi_rows[1] = C_bi(0,1);
@@ -1856,9 +1856,9 @@ void FixedwingAttitudeControl::JUAN_logger()
 	_juan_att_var.estimated_position_y = _pos_y_est;
 	_juan_att_var.estimated_position_z = _pos_z_est;
 
-	_juan_att_var.reference_position_x = _pos_x_ref;
-	_juan_att_var.reference_position_y = _pos_y_ref;
-	_juan_att_var.reference_position_z = _pos_z_ref;
+	// _juan_att_var.reference_position_x = _pos_x_ref;
+	// _juan_att_var.reference_position_y = _pos_y_ref;
+	// _juan_att_var.reference_position_z = _pos_z_ref;
 
 
 	if (_position_control_flag == 1) {
