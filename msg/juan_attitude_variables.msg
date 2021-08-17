@@ -42,11 +42,15 @@ float32 estimated_position_x # north estimated
 float32 estimated_position_y # east estimated
 float32 estimated_position_z # down estimated
 
+float32 reference_velocity_x # north vel reference
+float32 reference_velocity_y # east vel reference
+float32 reference_velocity_z # down vel reference
+
 float32 estimated_velocity_x # north vel estimated
 float32 estimated_velocity_y # east vel estimated
 float32 estimated_velocity_z # down vel estimated
 
-
+float32 normalized_throttle # throttle output
 
 float32 control_status # singularity management
 
@@ -55,3 +59,9 @@ float32 indicated_airspeed #indicated airspeed test
 float32 j_advance #advance ratio
 float32 omega_rpm #previous omega
 float32 heading_0 #initial heading upon switch to acro
+
+float32 path_law # path law
+
+float32 tangent_v1 # pf path tangent1
+float32 tangent_v2 # pf path tangent2
+float32 tangent_v3 # pf path tangent3

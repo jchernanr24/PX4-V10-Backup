@@ -218,6 +218,64 @@ private:
 	float fv2{0.0f};
 	float fv3{0.0f};
 
+	int enter_acro{0};
+	int flick_counter{1};
+	float x_rate_body;
+	float y_rate_body;
+	float z_rate_body;
+
+	float _read_roll_stick;
+	float _read_pitch_stick;
+	float _read_thrust_stick;
+	float _read_yaw_stick;
+
+	float _pos_x_est;
+	float _pos_y_est;
+	float _pos_z_est;
+
+	float _vel_x_est;
+	float _vel_y_est;
+	float _vel_z_est;
+
+	int _attitude_maneuver{0};
+	int _position_maneuver{0};
+
+	float _manual_yaw;
+	float _manual_roll;
+	float _manual_pitch;
+	float _manual_fourth;
+	float _heading_rate_coordinated;
+
+	int _thust_manual_flag{0};
+	int _position_control_flag{0};
+
+	float _thrust_hard_value;
+	int _program_counter{0};
+
+	float _tau_1;
+	float _tau_2;
+	float _tau_3;
+
+	float _AilDef;
+	float _ElevDef;
+	float _RudDef;
+
+	float _sigma;
+	float _d_sigma;
+
+
+	float _Tv1;
+	float _Tv2;
+	float _Tv3;
+
+	float _heading_path;
+
+	int _path_following_flag{0};
+
+	float _Vel_PF;
+	float _a_PF;
+	float _b_PF;
+
 
 	struct {
 		float p_tc;
@@ -385,8 +443,21 @@ private:
 
 	//JUAN additional functions
 	void    JUAN_position_control();
-	void    JUAN_reference_generator(int _maneuver_type);
+	void    JUAN_reference_generator();
 	float   saturate(float value, float min, float max);
 	void    JUAN_singularity_management(float xy_speed, float angle_vect);
+	void    JUAN_enter_acro_manager();
+	void    JUAN_stabilized_reset();
+	void    JUAN_vehicle_states_reader();
+	void    JUAN_reference_attitude_generator();
 
+	void    JUAN_straight_line_time(float _Vel, float _Xi, float _Ga);
+	void    JUAN_control_allocation();
+	void    JUAN_mission_planner();
+	void    JUAN_logger();
+	void    JUAN_attitude_control(int _innovation_option);
+	void    JUAN_pose_initialize();
+	void    Unit_Speed_line(float Xi, float Ga);
+	void    Unit_Speed_helix(float dir, float r, float c, float Xi);
+	void    JUAN_Path_F_Helix_Lines(float Vel, float a, float b);
 };
