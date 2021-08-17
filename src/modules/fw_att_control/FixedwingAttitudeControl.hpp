@@ -218,6 +218,22 @@ private:
 	float fv2{0.0f};
 	float fv3{0.0f};
 
+	float pos_x_final{0.0f};
+	float pos_y_final{0.0f};
+	float pos_z_final{0.0f};
+
+	float _pos_x_exit{0.0f};
+	float _pos_y_exit{0.0f};
+	float t_circ{0.0f};
+
+	bool completeFlag = false;
+	bool exitMsgSent = false;
+
+float t_last{0.0f};
+float vel_x_final{0.0f};
+float vel_y_final{0.0f};
+
+
 
 	struct {
 		float p_tc;
