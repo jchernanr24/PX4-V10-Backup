@@ -248,6 +248,7 @@ private:
 
 	int _thust_manual_flag{0};
 	int _position_control_flag{0};
+	int _velocity_control_flag{0};
 
 	float _thrust_hard_value;
 	int _program_counter{0};
@@ -261,6 +262,7 @@ private:
 	float _RudDef;
 
 	float _sigma;
+	float _sigma_0{0.0f};
 	float _d_sigma;
 
 
@@ -275,6 +277,11 @@ private:
 	float _Vel_PF;
 	float _a_PF;
 	float _b_PF;
+
+
+	float _err_vel_x_int{0.0f};
+	float _err_vel_y_int{0.0f};
+	float _err_vel_z_int{0.0f};
 
 
 	struct {

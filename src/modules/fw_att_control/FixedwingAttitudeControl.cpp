@@ -770,9 +770,7 @@ void FixedwingAttitudeControl::Run()
 				_e_int_2 = 0.0f;
 				_e_int_3 = 0.0f;
 
-				_error_x_int = 0.0f;
-				_error_y_int = 0.0f;
-				_error_z_int = 0.0f;
+
 
 				_control_operation_mode = 0;
 
@@ -916,12 +914,9 @@ void FixedwingAttitudeControl::Run()
 					//  _thust_manual_flag = 0;
 				 // }
 
-				 JUAN_attitude_control(1);
-
-
+				 	JUAN_attitude_control(1);
 					/* .........................Control allocation......................*/
 					JUAN_control_allocation();
-
 					JUAN_logger();
 
 				/*............... JUAN attitude control ends here.................... */
@@ -1131,28 +1126,58 @@ void FixedwingAttitudeControl::JUAN_position_control()
 
 
 	// Control law
-	float _error_pos_x = _pos_x_ref-_pos_x_est;
-	float _error_pos_y = _pos_y_ref-_pos_y_est;
-	float _error_pos_z = _pos_z_ref-_pos_z_est;
 
-	float _error_vel_x = _vel_x_ref-_vel_x_est;
-	float _error_vel_y = _vel_y_ref-_vel_y_est;
-	float _error_vel_z = _vel_z_ref-_vel_z_est;
 
-	_error_x_int = _error_x_int + _error_pos_x*_delta_time_attitude;
-	_error_y_int = _error_y_int + _error_pos_y*_delta_time_attitude;
-	_error_z_int = _error_z_int + _error_pos_z*_delta_time_attitude;
+	if (_velocity_control_flag == 0)
+	{
+			float _error_pos_x = _pos_x_ref-_pos_x_est;
+			float _error_pos_y = _pos_y_ref-_pos_y_est;
+			float _error_pos_z = _pos_z_ref-_pos_z_est;
 
-	// Nose vector
-	float Fv1 = 1.0f*0.8f*0.8f*(1.3f*KdX * _error_vel_x + KpX * _error_pos_x + 0.5f*KiX * _error_x_int);
-	float Fv2 = 1.0f*0.8f*0.8f*(1.3f*KdY * _error_vel_y + KpY * _error_pos_y + 0.5f*KiY * _error_y_int);
-	float Fv3 = 1.0f*0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _error_pos_z + 0.3f*KiZ * _error_z_int) - 0.2f*_gravity_const;
-	float _norm_F = sqrtf(Fv1*Fv1+Fv2*Fv2+Fv3*Fv3);
-	fv1 = Fv1/_norm_F;
-	fv2 = Fv2/_norm_F;
-	fv3 = Fv3/_norm_F;
-	// Thrust magnitude (N)
-  ThrustN = _mass_const*_norm_F;
+			float _error_vel_x = _vel_x_ref-_vel_x_est;
+			float _error_vel_y = _vel_y_ref-_vel_y_est;
+			float _error_vel_z = _vel_z_ref-_vel_z_est;
+
+			_error_x_int = _error_x_int + _error_pos_x*_delta_time_attitude;
+			_error_y_int = _error_y_int + _error_pos_y*_delta_time_attitude;
+			_error_z_int = _error_z_int + _error_pos_z*_delta_time_attitude;
+
+			// Nose vector
+			float Fv1 = 1.0f*0.8f*0.8f*(1.3f*KdX * _error_vel_x + KpX * _error_pos_x + 0.5f*KiX * _error_x_int);
+			float Fv2 = 1.0f*0.8f*0.8f*(1.3f*KdY * _error_vel_y + KpY * _error_pos_y + 0.5f*KiY * _error_y_int);
+			float Fv3 = 1.0f*0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _error_pos_z + 0.3f*KiZ * _error_z_int) - 0.2f*_gravity_const;
+			float _norm_F = sqrtf(Fv1*Fv1+Fv2*Fv2+Fv3*Fv3);
+			fv1 = Fv1/_norm_F;
+			fv2 = Fv2/_norm_F;
+			fv3 = Fv3/_norm_F;
+			// Thrust magnitude (N)
+			ThrustN = _mass_const*_norm_F;
+  }
+	else
+	{
+		float _error_vel_x = _vel_x_ref-_vel_x_est;
+		float _error_vel_y = _vel_y_ref-_vel_y_est;
+		float _error_vel_z = _vel_z_ref-_vel_z_est;
+
+		_err_vel_x_int = _err_vel_x_int + _error_vel_x*_delta_time_attitude;
+		_err_vel_y_int = _err_vel_y_int + _error_vel_y*_delta_time_attitude;
+		_err_vel_z_int = _err_vel_z_int + _error_vel_z*_delta_time_attitude;
+
+		float Fv1 = 1.0f*0.8f*0.8f*(1.3f*KdX * _error_vel_x + KpX * _err_vel_x_int );
+		float Fv2 = 1.0f*0.8f*0.8f*(1.3f*KdY * _error_vel_y + KpY * _err_vel_y_int );
+		float Fv3 = 1.0f*0.8f*0.8f*(1.2f*KdZ * _error_vel_z + 1.2f*KpZ * _err_vel_z_int) - 0.2f*_gravity_const;
+		float _norm_F = sqrtf(Fv1*Fv1+Fv2*Fv2+Fv3*Fv3);
+		fv1 = Fv1/_norm_F;
+		fv2 = Fv2/_norm_F;
+		fv3 = Fv3/_norm_F;
+		// Thrust magnitude (N)
+		ThrustN = _mass_const*_norm_F;
+	}
+
+
+
+
+
 	// Non-normalized wing vector
 	float Wv1 = -fv2;
 	float Wv2 = fv1;
@@ -1187,6 +1212,9 @@ void FixedwingAttitudeControl::JUAN_position_control()
 			{
 					_heading_ref = _heading_ref - 2*PI_f;
 			}
+			float _error_pos_x = _pos_x_ref-_pos_x_est;
+			float _error_pos_y = _pos_y_ref-_pos_y_est;
+			float _error_pos_z = _pos_z_ref-_pos_z_est;
 			matrix::Vector3f error_inertial(_error_pos_x, _error_pos_y, _error_pos_z);
 			matrix::Vector3f error_body = C_bi*error_inertial;
 			float eby = error_body(1);
@@ -1444,7 +1472,15 @@ void FixedwingAttitudeControl::JUAN_stabilized_reset()
 	{
 		_program_counter = 0;
 	}
-	_sigma = 0.0f;
+	_sigma_0 = 0.0f;
+	_err_vel_x_int = 0.0f;
+	_err_vel_y_int = 0.0f;
+	_err_vel_z_int = 0.0f;
+
+	_error_x_int = 0.0f;
+	_error_y_int = 0.0f;
+	_error_z_int = 0.0f;
+
 }
 
 void FixedwingAttitudeControl::JUAN_vehicle_states_reader()
@@ -1487,9 +1523,11 @@ void FixedwingAttitudeControl::JUAN_reference_attitude_generator()
 		/* ....................Manual attitude steady...........................*/
 		_manual_roll = _read_roll_stick*0.785f;
 		_manual_pitch = _read_pitch_stick*-0.785f;
-		// Velocity
-		matrix::Vector3f _inertial_velocity(_global_pos.vel_n, _global_pos.vel_e, _global_pos.vel_d);
+		// // Velocity
+
+		matrix::Vector3f _inertial_velocity(_vel_x_est, _vel_y_est, _vel_z_est);
 		matrix::Vector3f _body_velocity = C_bi*_inertial_velocity;
+
 		float _vel_ground = sqrtf(_body_velocity(0)*_body_velocity(0)+_body_velocity(1)+_body_velocity(1));
 		if (_vel_ground <5.0f){
 			_ground_velocity_corrected = 5.0f;
@@ -1497,9 +1535,10 @@ void FixedwingAttitudeControl::JUAN_reference_attitude_generator()
 		else {
 			_ground_velocity_corrected = _vel_ground;
 		}
+		// _ground_velocity_corrected = 0.5f;
 		// JUAN note: tangent can cause issues if roll is allowed to go to 90 degrees!
 		_heading_rate_coordinated = 1.5f*9.81f/_ground_velocity_corrected * tanf(_manual_roll);
-
+		//
 		_manual_yaw = _delta_time_attitude*_heading_rate_coordinated+_previous_yaw;
 		bool _manual_yaw_check = PX4_ISFINITE(_manual_yaw);
 
@@ -1510,6 +1549,7 @@ void FixedwingAttitudeControl::JUAN_reference_attitude_generator()
 		else{
 			_manual_yaw = _previous_yaw;
 		}
+		// _manual_yaw = _initial_heading;
 		_roll_rate_reference = 0.0f;
 		_pitch_rate_reference = 0.0f;
 		_yaw_rate_reference = _heading_rate_coordinated;
@@ -1675,18 +1715,18 @@ void FixedwingAttitudeControl::JUAN_reference_attitude_generator()
 
 
 
- if (_attitude_maneuver == 1 ) {
-	 float bldr_array_Cfourth[9] = {cosf(_manual_fourth), sinf(_manual_fourth), 0.0f, -sinf(_manual_fourth), cosf(_manual_fourth), 0.0f, 0.0f, 0.0f, 1.0f};
-   matrix::SquareMatrix<float, 3> Bldr_Matrix_Cfourth(bldr_array_Cfourth);
-   matrix::Dcmf C_fourth(Bldr_Matrix_Cfourth);
-	 matrix::Dcmf C_manual = C_fourth*C_roll*C_pitch*C_yaw;
-	  // matrix::Dcmf C_manual = C_roll*C_pitch*C_yaw;
-	 C_ri = C_manual;
- }
- else{
+ // if (_attitude_maneuver == 1 ) {
+	//  float bldr_array_Cfourth[9] = {cosf(_manual_fourth), sinf(_manual_fourth), 0.0f, -sinf(_manual_fourth), cosf(_manual_fourth), 0.0f, 0.0f, 0.0f, 1.0f};
+ //   matrix::SquareMatrix<float, 3> Bldr_Matrix_Cfourth(bldr_array_Cfourth);
+ //   matrix::Dcmf C_fourth(Bldr_Matrix_Cfourth);
+	//  matrix::Dcmf C_manual = C_fourth*C_roll*C_pitch*C_yaw;
+	//   // matrix::Dcmf C_manual = C_roll*C_pitch*C_yaw;
+	//  C_ri = C_manual;
+ // }
+ // else{
 	 matrix::Dcmf C_manual = C_roll*C_pitch*C_yaw;
 	 C_ri = C_manual;
- }
+ // }
 		matrix::Dcmf C_riT = C_ri.transpose();
 		matrix::Dcmf C_br_alt = C_bi*C_riT;
 		matrix::Vector3f _reference_euler_rate(_roll_rate_reference,_pitch_rate_reference,_yaw_rate_reference);
@@ -1769,14 +1809,15 @@ void FixedwingAttitudeControl::JUAN_mission_planner()
 		_thrust_hard_value = 1.0f;
 		if (fabsf(_pos_z_est)>30.0f){
 			_program_counter = 3;
-			// JUAN_pose_initialize();
+			JUAN_pose_initialize();
 		}
 	}
 	else
 	{
-		_attitude_maneuver = 0;
-		_position_control_flag = 0;
-		_thrust_hard_value = _manual.z;
+		// _attitude_maneuver = 0;
+		// _position_control_flag = 0;
+		// _thrust_hard_value = _manual.z;
+
 		// _thrust_hard_value = 1.0f;
 		//
 		// _position_control_flag = 1;
@@ -1790,6 +1831,14 @@ void FixedwingAttitudeControl::JUAN_mission_planner()
 		// _a_PF = 0.0f;
 		// _b_PF = 0.5f;
 
+		_position_control_flag = 1;
+		_path_following_flag = 0;
+		_velocity_control_flag = 1;
+
+		float _VelC = 10.0f;
+		float _GaC = 0.0f;
+		JUAN_straight_line_time(_VelC, _initial_heading, _GaC);
+
 
 	}
 }
@@ -1799,6 +1848,8 @@ void FixedwingAttitudeControl::JUAN_logger()
 	/*...................Custom logging ................................*/
 	/*...............Always logged......................................*/
 	_juan_att_var.timestamp = hrt_absolute_time();
+
+	_juan_att_var.test_variable = _program_counter;
 
 	_juan_att_var.tau_ref[0] = _tau_1;
 	_juan_att_var.tau_ref[1] = _tau_2;
@@ -2124,22 +2175,22 @@ void FixedwingAttitudeControl::JUAN_attitude_control(int _innovation_option)
 
 void FixedwingAttitudeControl::JUAN_pose_initialize()
 {
-		float _added_initial_distance = 10.0f;
+		float _added_initial_distance = 0.0f;
 		_pos_x_initial = _pos_x_ref+_added_initial_distance*cosf(_heading_path);
 		_pos_y_initial = _pos_y_ref+_added_initial_distance*sinf(_heading_path);
 		// _pos_x_initial = _pos_x_ref;
 		// _pos_y_initial = _pos_y_ref;
 		_pos_z_initial = _pos_z_ref;
-		_sigma = 0.0f;
+		_sigma_0 = _sigma;
 		_initial_heading = _heading_path;
 
 }
 
 void FixedwingAttitudeControl::Unit_Speed_line(float Xi, float Ga)
 {
- _pos_x_ref = _sigma*cosf(Xi)*cosf(Ga)+_pos_x_initial;
- _pos_y_ref = _sigma*sinf(Xi)*cosf(Ga)+_pos_y_initial;
- _pos_z_ref = -_sigma*sinf(Ga)+_pos_z_initial;
+ _pos_x_ref = (_sigma-_sigma_0)*cosf(Xi)*cosf(Ga)+_pos_x_initial;
+ _pos_y_ref = (_sigma-_sigma_0)*sinf(Xi)*cosf(Ga)+_pos_y_initial;
+ _pos_z_ref = -(_sigma-_sigma_0)*sinf(Ga)+_pos_z_initial;
 
  _Tv1 = cosf(Xi)*cosf(Ga);
  _Tv2 = sinf(Xi)*cosf(Ga);
@@ -2232,7 +2283,7 @@ void FixedwingAttitudeControl::JUAN_Path_F_Helix_Lines(float Vel, float a, float
  matrix::Vector3f _vel_Inert = C_bi.transpose()*_vel_B;
  float _Kl = 4.0f;
 
- matrix::Vector3f _temp_aux = _vel_Inert+_Kl*_err_path;
+ // matrix::Vector3f _temp_aux = _vel_Inert+_Kl*_err_path;
 
  float _aux1 = _vel_Inert(0)+_Kl*_err_path_x;
  float _aux2 = _vel_Inert(1)+_Kl*_err_path_y;
