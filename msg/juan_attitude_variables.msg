@@ -65,3 +65,12 @@ float32 path_law # path law
 float32 tangent_v1 # pf path tangent1
 float32 tangent_v2 # pf path tangent2
 float32 tangent_v3 # pf path tangent3
+
+float32 lateral_err # lateral error used for added roll
+
+float32 sigma_path # path parameter
+float32 sigma_dot # path evol law
+
+float32 error_s # ontrack error
+float32 error_c # crosstrack error
+float32 error_h # altitude error

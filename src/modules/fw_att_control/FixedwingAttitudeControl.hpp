@@ -261,7 +261,7 @@ private:
 	float _ElevDef;
 	float _RudDef;
 
-	float _sigma;
+	float _sigma{0.0f};
 	float _sigma_0{0.0f};
 	float _d_sigma;
 
@@ -282,6 +282,16 @@ private:
 	float _err_vel_x_int{0.0f};
 	float _err_vel_y_int{0.0f};
 	float _err_vel_z_int{0.0f};
+
+	float _roll_com;
+
+	float _probe_var;
+
+	float _lateral_error_roll;
+
+	float _error_onpath;
+	float _error_crosstrack;
+	float _error_altitude;
 
 
 	struct {
@@ -467,4 +477,8 @@ private:
 	void    Unit_Speed_line(float Xi, float Ga);
 	void    Unit_Speed_helix(float dir, float r, float c, float Xi);
 	void    JUAN_Path_F_Helix_Lines(float Vel, float a, float b);
+	void    JUAN_Add_Roll();
+	void    JUAN_helix_time(float _Vel, float _dir, float r, float c, float Xi);
+	void    JUAN_provisional_path_following();
+
 };
