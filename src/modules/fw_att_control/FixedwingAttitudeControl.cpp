@@ -1487,8 +1487,8 @@ void FixedwingAttitudeControl::JUAN_reference_attitude_generator()
 	if (_attitude_maneuver == 0)
 	{
 		/* ....................Manual attitude steady...........................*/
-		// _manual_roll = _read_roll_stick*0.785f;
-		// _manual_pitch = _read_pitch_stick*-0.785f;
+		_manual_roll = _read_roll_stick*0.785f;
+		_manual_pitch = _read_pitch_stick*-0.785f;
 		// // // Velocity
 		//
 		// matrix::Vector3f _inertial_velocity(_vel_x_est, _vel_y_est, _vel_z_est);
