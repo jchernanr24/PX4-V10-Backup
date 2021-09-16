@@ -278,6 +278,11 @@ private:
 	float _a_PF;
 	float _b_PF;
 
+	float _Vel_PF_prev;
+	float _a_PF_prev;
+	float _b_PF_prev;
+
+
 
 	float _err_vel_x_int{0.0f};
 	float _err_vel_y_int{0.0f};
@@ -480,5 +485,6 @@ private:
 	void    JUAN_Add_Roll();
 	void    JUAN_helix_time(float _Vel, float _dir, float r, float c, float Xi);
 	void    JUAN_provisional_path_following();
+	void    JUAN_manual_PF_manager();
 
 };

@@ -764,6 +764,7 @@ void FixedwingAttitudeControl::Run()
 				JUAN_stabilized_reset();
 				_previous_yaw = euler_angles.psi();
 				_initial_heading = _previous_yaw;
+				_heading_path = _initial_heading;
 				_previous_time = hrt_absolute_time()/1e6;
 				_time_elapsed = 0.0f;
 				_e_int_1 = 0.0f;
@@ -1447,6 +1448,10 @@ void FixedwingAttitudeControl::JUAN_stabilized_reset()
 	_error_y_int = 0.0f;
 	_error_z_int = 0.0f;
 
+	_Vel_PF_prev = 10.0f;
+	_a_PF_prev = 0.0f;
+	_b_PF_prev = 0.0f;
+
 }
 
 void FixedwingAttitudeControl::JUAN_vehicle_states_reader()
@@ -1810,8 +1815,8 @@ void FixedwingAttitudeControl::JUAN_mission_planner()
 		_position_control_flag = 1;
 		_path_following_flag = 1;
 		_velocity_control_flag = 1;
-		JUAN_provisional_path_following();
-
+		// JUAN_provisional_path_following();
+		JUAN_manual_PF_manager();
 
 	}
 }
@@ -1822,7 +1827,7 @@ void FixedwingAttitudeControl::JUAN_logger()
 	/*...............Always logged......................................*/
 	_juan_att_var.timestamp = hrt_absolute_time();
 
-	// _juan_att_var.test_variable = _probe_var;
+	_juan_att_var.test_variable = _probe_var;
 
 	_juan_att_var.tau_ref[0] = _tau_1;
 	_juan_att_var.tau_ref[1] = _tau_2;
@@ -2158,11 +2163,11 @@ void FixedwingAttitudeControl::JUAN_attitude_control(int _innovation_option)
 
 void FixedwingAttitudeControl::JUAN_pose_initialize()
 {
-		float _added_initial_distance = 0.0f;
-		_pos_x_initial = _pos_x_ref+_added_initial_distance*cosf(_heading_path);
-		_pos_y_initial = _pos_y_ref+_added_initial_distance*sinf(_heading_path);
-		// _pos_x_initial = _pos_x_ref;
-		// _pos_y_initial = _pos_y_ref;
+		// float _added_initial_distance = 0.0f;
+		// _pos_x_initial = _pos_x_ref+_added_initial_distance*cosf(_heading_path);
+		// _pos_y_initial = _pos_y_ref+_added_initial_distance*sinf(_heading_path);
+		_pos_x_initial = _pos_x_ref;
+		_pos_y_initial = _pos_y_ref;
 		_pos_z_initial = _pos_z_ref;
 		_sigma_0 = _sigma;
 		_initial_heading = _heading_path;
@@ -2404,7 +2409,7 @@ void FixedwingAttitudeControl::JUAN_provisional_path_following()
 	float _Pv3 = -_Tv2*_Hv1+_Tv1*_Hv2;
 
 	float norm_Pv = sqrtf(_Pv1*_Pv1+_Pv2*_Pv2+_Pv3*_Pv3);
-	// _probe_var = norm_Pv;
+
 
 	_Pv1 = _Pv1/norm_Pv;
 	_Pv2 = _Pv2/norm_Pv;
@@ -2448,4 +2453,123 @@ void FixedwingAttitudeControl::JUAN_provisional_path_following()
 	 	  _d_sigma = 0.0f;
 	 }
 	 _sigma = _sigma + _d_sigma*_delta_time_attitude;
-}
+	 }
+
+
+void FixedwingAttitudeControl::JUAN_manual_PF_manager()
+{
+	float _k_h = 0.1f*1.0f;
+	float _k_c = 1.0f*1.0f;
+	float _k_s = 0.5f*0.1f*8.0f;
+	float _d_a = 7.0f;
+
+	// if (_time_elapsed < 10.0f)
+	// {
+	// 		_a_PF = 0.0f;
+	// }
+	// else if(_time_elapsed < 25.0f)
+	// {
+	// 	_a_PF = -0.6f;
+	// }
+	// else{
+	// 	_a_PF = 0.0f;
+	// }
+	float _comm_a = _read_roll_stick*5.0f;
+	int _cast_comm_a = static_cast<int>(_comm_a);
+	// _a_PF = 0.0f;
+	_a_PF = -1.0f*_cast_comm_a/5.0f;
+
+	float _comm_b = _read_pitch_stick*5.0f;
+	int _cast_comm_b = static_cast<int>(_comm_b);
+	// _b_PF = 0.0f;
+	_b_PF = -1.0f*_cast_comm_b/5.0f;
+
+	_Vel_PF = 10.0f;
+	float _Vel_com = _Vel_PF;
+
+	if (_a_PF != _a_PF_prev || _b_PF != _b_PF_prev)
+	{
+		JUAN_pose_initialize();
+	}
+
+	_a_PF_prev = _a_PF;
+	_b_PF_prev = _b_PF;
+	_Vel_PF_prev = _Vel_PF;
+
+
+	if(fabsf(_a_PF) < 0.2f)
+	{
+		float _gamma = 60.0f*_b_PF*3.1415f/180.0f;
+		Unit_Speed_line(_initial_heading, _gamma);
+			_probe_var = 0.0f;
+	}
+
+	else
+	{
+		float _rmin = 10.0f;
+		float _rMax = 30.0f;
+		float _k = (_rmin-_rMax)/0.8f;``
+		float _r0 = (5.0f*_rMax-_rmin)/4.0f;
+		float _r = _k*fabsf(_a_PF)+_r0;
+		float _dir = _a_PF/fabsf(_a_PF);
+		float _ga = 60.0f*_b_PF*3.1415f/180.0f;
+		float _c = _r*tan(_ga);
+		Unit_Speed_helix(_dir,_r,_c,_initial_heading);
+		_probe_var = _r;
+	}
+
+
+	float _Hv1 = -_Tv2/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
+	float _Hv2 = _Tv1/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
+	float _Hv3 = 0.0f;
+
+	float _Pv1 = -_Tv3*_Hv2;
+	float _Pv2 = _Tv3*_Hv1;
+	float _Pv3 = -_Tv2*_Hv1+_Tv1*_Hv2;
+
+	float norm_Pv = sqrtf(_Pv1*_Pv1+_Pv2*_Pv2+_Pv3*_Pv3);
+
+
+	_Pv1 = _Pv1/norm_Pv;
+	_Pv2 = _Pv2/norm_Pv;
+	_Pv3 = _Pv3/norm_Pv;
+
+	//
+	// float bldr_array_cpi[9] = {_Tv1,_Hv1,_Pv1,_Tv2,_Hv2,_Pv2,_Tv3,_Hv3,_Pv3};
+	// matrix::SquareMatrix<float, 3> Bldr_Matrix_cpi(bldr_array_cpi);
+	// matrix::Dcmf C_path (Bldr_Matrix_cpi); // DCM cast transposes?
+
+	float _err_path_x = _pos_x_est - _pos_x_ref;
+	float _err_path_y = _pos_y_est - _pos_y_ref;
+	float _err_path_z = _pos_z_est - _pos_z_ref;
+
+	// matrix::Vector3f _err_path(_err_path_x,_err_path_y,_err_path_z);
+	// matrix::Vector3f _err_path_GN = C_path*_err_path;
+	//
+	//
+	// _error_onpath = _err_path_GN(0);
+	// _error_crosstrack = _err_path_GN(1);
+	// _error_altitude = _err_path_GN(2);
+
+	_error_onpath = _err_path_x*_Tv1 + _err_path_y*_Tv2 + _err_path_z *_Tv3;
+	_error_crosstrack = _err_path_x*_Hv1 + _err_path_y*_Hv2 + _err_path_z *_Hv3;
+	_error_altitude = _err_path_x*_Pv1 + _err_path_y*_Pv2 + _err_path_z *_Pv3;
+
+
+	float k_tst = _Vel_com/_d_a;
+
+	float _La_1 = k_tst*(_d_a*_Tv1-_k_c*_error_crosstrack*_Hv1-_k_h*_error_altitude*_Pv1);
+	float _La_2 = k_tst*(_d_a*_Tv2-_k_c*_error_crosstrack*_Hv2-_k_h*_error_altitude*_Pv2);
+	float _La_3 = k_tst*(_d_a*_Tv3-_k_c*_error_crosstrack*_Hv3-_k_h*_error_altitude*_Pv3);
+
+	_vel_x_ref = _La_1;
+	_vel_y_ref = _La_2;
+	_vel_z_ref = _La_3;
+
+	 _d_sigma =  _Vel_com + _k_s*_error_onpath;
+
+	 if (_d_sigma < 0.0f) {
+	 	  _d_sigma = 0.0f;
+	 }
+	 _sigma = _sigma + _d_sigma*_delta_time_attitude;
+	}
