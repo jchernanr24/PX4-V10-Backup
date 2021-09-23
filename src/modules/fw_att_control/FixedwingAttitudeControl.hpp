@@ -298,6 +298,8 @@ private:
 	float _error_crosstrack;
 	float _error_altitude;
 
+	int _control_mode_change_direction{0};
+
 
 	struct {
 		float p_tc;

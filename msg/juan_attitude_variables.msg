@@ -74,3 +74,8 @@ float32 sigma_dot # path evol law
 float32 error_s # ontrack error
 float32 error_c # crosstrack error
 float32 error_h # altitude error
+
+float32 read_pitch #pitch stick value
+float32 read_roll #roll stick value
+float32 read_yaw #yaw stick value
+float32 read_thrust #thrust stick value
