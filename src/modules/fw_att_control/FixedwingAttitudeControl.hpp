@@ -224,6 +224,15 @@ private:
 	float y_rate_body;
 	float z_rate_body;
 
+	float ddw_x_body{0.0f};
+	float ddw_y_body{0.0f};
+	float ddw_z_body{0.0f};
+	float mc_alpha{0.0f};
+	float d_mc_alpha{0.0f};
+	float dd_mc_alpha{0.0f};
+
+
+
 	float _read_roll_stick;
 	float _read_pitch_stick;
 	float _read_thrust_stick;
@@ -300,6 +309,12 @@ private:
 
 	int _control_mode_change_direction{0};
 
+	float _pos_x_prev{0.0f};
+	float _pos_y_prev{0.0f};
+
+	float barrel_roll{0.0f};
+
+	float _slips_estimate{0.0f};
 
 	struct {
 		float p_tc;

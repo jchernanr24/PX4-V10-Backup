@@ -79,3 +79,5 @@ float32 read_pitch #pitch stick value
 float32 read_roll #roll stick value
 float32 read_yaw #yaw stick value
 float32 read_thrust #thrust stick value
+
+float32 slipstr_att #slipstream estimate
