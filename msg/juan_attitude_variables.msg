@@ -33,6 +33,10 @@ float32[3] omega_bod   # angular velocity measurement in body coord
 
 float32 test_variable    # dummy tester slot
 
+float32 rate_ref_pitch #pitch rate ref
+float32 rate_ref_roll #roll rate ref
+float32 rate_ref_yaw #yaw rate ref
+
 
 float32 reference_position_x # north reference
 float32 reference_position_y # east reference
@@ -81,3 +85,5 @@ float32 read_yaw #yaw stick value
 float32 read_thrust #thrust stick value
 
 float32 slipstr_att #slipstream estimate
+uint64 innov_term #att innovation term
+uint64 att_man_id #att maneuver iden

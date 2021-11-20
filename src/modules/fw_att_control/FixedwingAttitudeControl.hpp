@@ -212,6 +212,7 @@ private:
 	float _previous_rpm{900.0f};
 	float _advance_ratio{0.5f};
 	matrix::Vector3f _alpha_reference_body;
+	int _PD_plus_flag{0};
 	float _global_jar;
 	float att_err_modifier{1.0f};
 	float fv1{0.0f};
@@ -231,7 +232,9 @@ private:
 	float d_mc_alpha{0.0f};
 	float dd_mc_alpha{0.0f};
 
-
+	int _attitude_error_innovation{1};
+	float _attitude_man_duration{2.0f};
+	float _slipstream_approx{4.0f};
 
 	float _read_roll_stick;
 	float _read_pitch_stick;
@@ -315,6 +318,8 @@ private:
 	float barrel_roll{0.0f};
 
 	float _slips_estimate{0.0f};
+
+	float _locked_heading{0.0f};
 
 	struct {
 		float p_tc;
@@ -503,5 +508,11 @@ private:
 	void    JUAN_helix_time(float _Vel, float _dir, float r, float c, float Xi);
 	void    JUAN_provisional_path_following();
 	void    JUAN_manual_PF_manager();
+
+	void    JUAN_loop_experiments();
+	void    JUAN_slanted_loop_experiments();
+	void    JUAN_ATA_experiments();
+	void    JUAN_harrier_experiments();
+	void    JUAN_sudden_experiments();
 
 };
