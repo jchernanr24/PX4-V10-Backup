@@ -2834,7 +2834,7 @@ void FixedwingAttitudeControl::JUAN_provisional_path_following()
 	float _k_s = 0.5f*0.1f*8.0f;
 	float _d_a = 7.0f;
 
-	Unit_Speed_helix(-1.0f, 10.0f, -2.0f, _initial_heading);
+	Unit_Speed_helix(-1.0f, 10.0f, 2.0f, _initial_heading);
 	// Unit_Speed_line(_initial_heading, 0.0f);
 
 	float _Hv1 = -_Tv2/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
