@@ -802,6 +802,8 @@ void FixedwingAttitudeControl::Run()
 
 				_previous_rpm = 900.0f;
 
+				_stage_PF = 0;
+
 
 			} else {
 				vehicle_rates_setpoint_poll();
@@ -1111,26 +1113,26 @@ void FixedwingAttitudeControl::JUAN_position_control()
 
 
 	// Thesis experiments gains!!!!!!!!!!!!!!!!
-	// float KpX = 1.6f*0.4f*2.0f*0.243f;
-	// float KpY = 1.6f*0.4f*2.0f*0.243f;
-	// float KpZ = 1.2f*0.4f*2.3f; //1.89f;
-	// float KdX = 1.4f*2.5f*0.1323f;
-	// float KdY = 1.4f*2.5f*0.1323f;
-	// float KdZ = 1.4f*2.0f*0.06615f;
-	// float KiX = 0.2f*0.15f*0.0008f;
-	// float KiY = 0.2f*0.15f*0.0008f;
-	// float KiZ = 0.2f*0.15f*0.0004f;
+	float KpX = 1.6f*0.4f*2.0f*0.243f;
+	float KpY = 1.6f*0.4f*2.0f*0.243f;
+	float KpZ = 1.2f*0.4f*2.3f; //1.89f;
+	float KdX = 1.4f*2.5f*0.1323f;
+	float KdY = 1.4f*2.5f*0.1323f;
+	float KdZ = 1.4f*2.0f*0.06615f;
+	float KiX = 0.2f*0.15f*0.0008f;
+	float KiY = 0.2f*0.15f*0.0008f;
+	float KiZ = 0.2f*0.15f*0.0004f;
 
-
-	float KpX = 1.08f;
-	float KpY = 1.08f;
-	float KpZ = 3.6f; //1.89f;
-	float KdX = 0.672f;
-	float KdY = 0.672f;
-	float KdZ = 0.336f;
-	float KiX = 0.0008f;
-	float KiY = 0.0008f;
-	float KiZ = 0.0004f;
+	//
+	// float KpX = 1.08f;
+	// float KpY = 1.08f;
+	// float KpZ = 3.6f; //1.89f;
+	// float KdX = 0.672f;
+	// float KdY = 0.672f;
+	// float KdZ = 0.336f;
+	// float KiX = 0.0008f;
+	// float KiY = 0.0008f;
+	// float KiZ = 0.0004f;
 
 
 
@@ -1281,10 +1283,10 @@ void FixedwingAttitudeControl::JUAN_position_control()
 void FixedwingAttitudeControl::JUAN_singularity_management(float xy_speed, float angle_vect)
 {
 	// controller switch thresholds
-	float angle_thrs_inf = 10*0.01745f;// 15 degrees
-	float angle_thrs_sup = 20*0.01745f;// 25 degrees
-	float vel_thrs_inf = 2.0f; // 2 m/s
-	float vel_thrs_sup = 3.0f; // 5 m/s
+	float angle_thrs_inf = 5*0.01745f;// 15 degrees
+	float angle_thrs_sup = 15*0.01745f;// 25 degrees
+	float vel_thrs_inf = 1.0f; // 2 m/s
+	float vel_thrs_sup = 2.0f; // 5 m/s
 	// Singularity management
 	if (_control_operation_mode > 0)
 	{ // in singularity mode, check if tilt and speed are enough
@@ -2145,14 +2147,19 @@ void FixedwingAttitudeControl::JUAN_mission_planner()
 		// _position_maneuver = 2;
 		// JUAN_reference_generator();
 
-		// _position_control_flag = 1;
-		// _path_following_flag = 1;
-		// _velocity_control_flag = 1;
+		_position_control_flag = 1;
+		_path_following_flag = 1;
+		_velocity_control_flag = 1;
 		// JUAN_provisional_path_following();
+		JUAN_helix_line();
 
 		// //
-		_path_following_flag = 1;
-		JUAN_manual_PF_manager();
+		// _path_following_flag = 1;
+		// JUAN_manual_PF_manager();
+
+
+
+
 
 	}
 }
@@ -2266,6 +2273,7 @@ void FixedwingAttitudeControl::JUAN_logger()
 			_juan_att_var.error_s = _error_onpath;
 			_juan_att_var.error_c = _error_crosstrack;
 			_juan_att_var.error_h = _error_altitude;
+			_juan_att_var.sigma_dot = _d_sigma;
 
 		}
 
@@ -2409,32 +2417,32 @@ void FixedwingAttitudeControl::JUAN_attitude_control(int _innovation_option)
 	 /*..................................................................*/
 
 	 /*................Attitude controller gains Final Experiments..............*/
-	 // float Kad1 = 0.8f*0.8f*0.8f*0.00706f;
-	 // float Kad2 = 0.6f*0.5f*0.07576f;
-	 // float Kad3 = 0.7f*0.07736f;
-	 //
-	 // float Kap1 = 0.8f*1.3f*0.1656f;
-	 // float Kap2 = 0.6f*1.3f*1.0f*1.022f;
-	 // float Kap3 = 1.0f*0.6776f;
-	 //
-	 // float Kai1 = 1.1f*0.8f*0.1656f;
-	 // float Kai2 = 1.1f*0.8f*1.022f;
-	 // float Kai3 = 1.0f*0.8f*0.6776f;
+	 float Kad1 = 0.8f*0.8f*0.8f*0.00706f;
+	 float Kad2 = 0.6f*0.5f*0.07576f;
+	 float Kad3 = 0.7f*0.07736f;
+
+	 float Kap1 = 0.8f*1.3f*0.1656f;
+	 float Kap2 = 0.6f*1.3f*1.0f*1.022f;
+	 float Kap3 = 1.0f*0.6776f;
+
+	 float Kai1 = 1.1f*0.8f*0.1656f;
+	 float Kai2 = 1.1f*0.8f*1.022f;
+	 float Kai3 = 1.0f*0.8f*0.6776f;
 	 /*..................................................................*/
 
 
 	 /*................Attitude controller gains Trial SITL..............*/
-	 float Kad1 = 1.6f*0.8f*0.8f*0.00706f;
-	 float Kad2 = 1.2f*0.5f*0.07576f;
-	 float Kad3 = 1.4f*0.07736f;
-
-	 float Kap1 = 1.6f*1.3f*0.1656f;
-	 float Kap2 = 1.2f*1.3f*1.0f*1.022f;
-	 float Kap3 = 1.4f*0.6776f;
-
-	float Kai1 = 0.0f;
-	float Kai2 = 0.0f;
-	float Kai3 = 0.0f;
+	//  float Kad1 = 1.6f*0.8f*0.8f*0.00706f;
+	//  float Kad2 = 1.2f*0.5f*0.07576f;
+	//  float Kad3 = 1.4f*0.07736f;
+	//
+	//  float Kap1 = 1.6f*1.3f*0.1656f;
+	//  float Kap2 = 1.2f*1.3f*1.0f*1.022f;
+	//  float Kap3 = 1.4f*0.6776f;
+	//
+	// float Kai1 = 0.0f;
+	// float Kai2 = 0.0f;
+	// float Kai3 = 0.0f;
 
 
 
@@ -2815,10 +2823,10 @@ void FixedwingAttitudeControl::JUAN_Add_Roll()
 				_roll_com = -max_roll*PI_f/180;
 			}
 		}
+		
+		barrel_roll = barrel_roll+4.0f*_delta_time_attitude;
+		_roll_com = barrel_roll;
 
-		// barrel_roll = barrel_roll+5.0f*_delta_time_attitude;
-		// _roll_com = barrel_roll;
-		//
 		// _roll_com = 3.1416f/2.0f;
 
 		// _roll_com = 0.0f;
@@ -2834,8 +2842,8 @@ void FixedwingAttitudeControl::JUAN_provisional_path_following()
 	float _k_s = 0.5f*0.1f*8.0f;
 	float _d_a = 7.0f;
 
-	Unit_Speed_helix(-1.0f, 10.0f, 2.0f, _initial_heading);
-	// Unit_Speed_line(_initial_heading, 0.0f);
+	// Unit_Speed_helix(-1.0f, 10.0f, 2.0f, _initial_heading);
+	Unit_Speed_line(_initial_heading, 0.0f);
 
 	float _Hv1 = -_Tv2/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
 	float _Hv2 = _Tv1/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
@@ -3239,3 +3247,99 @@ void FixedwingAttitudeControl::JUAN_loop_experiments()
 		_attitude_error_innovation = 1;
 	}
  }
+
+
+void FixedwingAttitudeControl::JUAN_helix_line()
+{
+	float _Vel_com = 10.0f;
+	float _k_h = 0.4f*1.0f;
+	float _k_c = 1.5f*1.0f;
+	float _k_s = 0.5f*0.1f*8.0f;
+	float _d_a = 7.0f;
+
+
+
+		// Unit_Speed_helix(-1.0f, 10.0f, 2.0f, _initial_heading);
+		// Unit_Speed_line(_initial_heading, 0.0f);
+
+  if (_sigma<60.0f) {
+   Unit_Speed_line(_initial_heading, 0.0f);
+  }
+	else if (_sigma<260.0f) {
+		if (_stage_PF == 0)
+		{
+			_stage_PF = 1;
+			_control_mode_change_direction = 4;
+			JUAN_pose_initialize();
+		}
+		Unit_Speed_helix(-1.0f, 20.0f, 0.5f, _initial_heading);
+	}
+	else
+	{
+		if (_stage_PF == 1)
+		{
+			_stage_PF = 2;
+			_control_mode_change_direction = 4;
+			JUAN_pose_initialize();
+		}
+		Unit_Speed_line(_initial_heading, 0.0f);
+	}
+
+
+
+
+	float _Hv1 = -_Tv2/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
+	float _Hv2 = _Tv1/sqrtf(_Tv1*_Tv1+_Tv2*_Tv2);
+	float _Hv3 = 0.0f;
+
+	float _Pv1 = -_Tv3*_Hv2;
+	float _Pv2 = _Tv3*_Hv1;
+	float _Pv3 = -_Tv2*_Hv1+_Tv1*_Hv2;
+
+	float norm_Pv = sqrtf(_Pv1*_Pv1+_Pv2*_Pv2+_Pv3*_Pv3);
+
+
+	_Pv1 = _Pv1/norm_Pv;
+	_Pv2 = _Pv2/norm_Pv;
+	_Pv3 = _Pv3/norm_Pv;
+
+	//
+	// float bldr_array_cpi[9] = {_Tv1,_Hv1,_Pv1,_Tv2,_Hv2,_Pv2,_Tv3,_Hv3,_Pv3};
+	// matrix::SquareMatrix<float, 3> Bldr_Matrix_cpi(bldr_array_cpi);
+	// matrix::Dcmf C_path (Bldr_Matrix_cpi); // DCM cast transposes?
+
+	float _err_path_x = _pos_x_est - _pos_x_ref;
+	float _err_path_y = _pos_y_est - _pos_y_ref;
+	float _err_path_z = _pos_z_est - _pos_z_ref;
+
+	// matrix::Vector3f _err_path(_err_path_x,_err_path_y,_err_path_z);
+	// matrix::Vector3f _err_path_GN = C_path*_err_path;
+	//
+	//
+	// _error_onpath = _err_path_GN(0);
+	// _error_crosstrack = _err_path_GN(1);
+	// _error_altitude = _err_path_GN(2);
+
+	_error_onpath = _err_path_x*_Tv1 + _err_path_y*_Tv2 + _err_path_z *_Tv3;
+	_error_crosstrack = _err_path_x*_Hv1 + _err_path_y*_Hv2 + _err_path_z *_Hv3;
+	_error_altitude = _err_path_x*_Pv1 + _err_path_y*_Pv2 + _err_path_z *_Pv3;
+
+
+	float k_tst = _Vel_com/_d_a;
+
+	float _La_1 = k_tst*(_d_a*_Tv1-_k_c*_error_crosstrack*_Hv1-_k_h*_error_altitude*_Pv1);
+	float _La_2 = k_tst*(_d_a*_Tv2-_k_c*_error_crosstrack*_Hv2-_k_h*_error_altitude*_Pv2);
+	float _La_3 = k_tst*(_d_a*_Tv3-_k_c*_error_crosstrack*_Hv3-_k_h*_error_altitude*_Pv3);
+
+	_vel_x_ref = _La_1;
+	_vel_y_ref = _La_2;
+	_vel_z_ref = _La_3;
+
+	 _d_sigma =  _Vel_com + _k_s*_error_onpath;
+
+	 if (_d_sigma < 0.0f) {
+			_d_sigma = 0.0f;
+	 }
+	 _sigma = _sigma + _d_sigma*_delta_time_attitude;
+
+}

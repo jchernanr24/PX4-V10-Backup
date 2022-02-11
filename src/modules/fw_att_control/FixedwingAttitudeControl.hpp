@@ -321,6 +321,8 @@ private:
 
 	float _locked_heading{0.0f};
 
+	int _stage_PF{0};
+
 	struct {
 		float p_tc;
 		float p_p;
@@ -514,5 +516,7 @@ private:
 	void    JUAN_ATA_experiments();
 	void    JUAN_harrier_experiments();
 	void    JUAN_sudden_experiments();
+
+	void    JUAN_helix_line();
 
 };
